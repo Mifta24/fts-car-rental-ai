@@ -148,7 +148,7 @@
 
         <div class="flex justify-end gap-3">
             <a href="{{ route('admin.vehicles.index') }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancel</a>
-            <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Save vehicle</button>
+            <button type="submit" class="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Save vehicle</button>
         </div>
     </form>
 </x-admin-layout>

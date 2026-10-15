@@ -1,4 +1,4 @@
-{{-- The stage shell: one fixed screen with a scene backdrop, a slim top bar, the scene itself (agent + content) and the always-on "ask the agent" dock. Nothing here scrolls. --}}
+{{-- The stage shell: one fixed screen with a dark studio backdrop, a slim top bar, the scene itself (agent line + content) and the always-on "ask the agent" dock. Nothing here scrolls. --}}
 @php
     $pageTitle = trim($__env->yieldContent('title')) ?: null;
     $pageDescription = trim($__env->yieldContent('description')) ?: null;
@@ -11,7 +11,7 @@
         'reservation' => [$site['nav_reservation'], route('rental.reservation', ['rentalSlug' => $rental->slug, 'lang' => $locale]), 'reservation'],
         'contact' => [$site['nav_contact'], route('rental.staff', ['rentalSlug' => $rental->slug, 'lang' => $locale]), 'staff'],
     ];
-    $backdropImage = ['showroom' => 'showroom', 'vehicles' => 'fleet', 'vehicle' => 'fleet', 'services' => 'services', 'service' => 'services', 'info' => 'info', 'reservation' => 'reservation', 'staff' => 'staff'][$scene] ?? 'showroom';
+    $heroImage = file_exists(public_path('images/hero-car.webp')) ? asset('images/hero-car.webp') : null;
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', $locale) }}">
@@ -24,7 +24,7 @@
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="stage" data-showroom data-scene="{{ $scene }}" style="--scene-image: url('{{ asset('images/scenes/'.$backdropImage.'.webp') }}'); --agent-image: url('{{ $backdrop['avatarImage'] }}'); --agent-zoom: {{ $backdrop['avatarZoom'] }}; --agent-focus: {{ $backdrop['avatarFocus'] }}">
+<body class="stage" data-showroom data-scene="{{ $scene }}" @if($heroImage) style="--hero-image: url('{{ $heroImage }}')" @endif>
     <a href="#content" class="skip-link">{{ $site['skip'] }}</a>
     <div class="stage-bg" aria-hidden="true"></div>
 
@@ -36,7 +36,7 @@
 
         <nav class="stage-nav" aria-label="{{ $site['nav_label'] }}">
             @foreach ($navItems as $key => [$label, $href, $icon])
-                <a href="{{ $href }}" class="stage-nav-link" @if($key === $navScene) aria-current="page" @endif>
+                <a href="{{ $href }}" class="stage-nav-link" data-nav="{{ $key }}" @if($key === $navScene) aria-current="page" @endif>
                     <x-menu-icon :name="$icon" width="18" height="18" /><span>{{ $label }}</span>
                 </a>
             @endforeach
@@ -49,6 +49,7 @@
                     <a href="?lang={{ $code }}" lang="{{ $code }}" aria-label="{{ ['id' => 'Bahasa Indonesia', 'en' => 'English', 'ja' => '日本語'][$code] }}" @if($code === $locale) aria-current="true" @endif>{{ $code }}</a>
                 @endforeach
             </nav>
+            <a href="{{ $navItems['contact'][1] }}" class="btn btn-primary btn-sm stage-cta">{{ $navItems['contact'][0] }}</a>
         </div>
     </header>
 
@@ -60,7 +61,6 @@
 
     <form class="ask-dock" data-ask-form autocomplete="off">
         <div class="ask-dock-inner">
-            <span class="chat-host-avatar" aria-hidden="true"></span>
             <input type="text" class="ask-dock-input" data-ask-input maxlength="4000" aria-label="{{ $labels['chat_placeholder'] }}" placeholder="{{ $labels['chat_placeholder'] }}">
             <button type="submit" class="ask-dock-send" data-ask-send>{{ $labels['chat_send'] }}</button>
         </div>

@@ -1,3 +1,6 @@
+@php
+    $heroImage = file_exists(public_path('images/hero-car.webp')) ? asset('images/hero-car.webp') : null;
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', $locale) }}">
 <head>
@@ -7,7 +10,7 @@
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="stage stage-opening" style="--scene-image: url('{{ asset('images/scenes/showroom.webp') }}')">
+<body class="stage stage-opening" data-scene="opening" @if($heroImage) style="--hero-image: url('{{ $heroImage }}')" @endif>
     <div class="stage-bg" aria-hidden="true"></div>
 
     <header class="stage-top">
@@ -29,25 +32,20 @@
     <main id="content" class="stage-main">
         <div class="opening">
             <div class="opening-copy">
-                <p class="eyebrow">AI RENTAL AGENT</p>
+                <p class="opening-lead"><span>AI Rental Agent</span><i aria-hidden="true"></i></p>
                 <h1>{{ $opening['welcome'] }} <em>FTS Car Rental AI</em></h1>
                 <p class="opening-tagline">{{ $opening['tagline'] }}</p>
-
-                <div class="opening-actions">
-                    @forelse ($rentals as $rental)
-                        <a href="{{ route('rental.show', ['rentalSlug' => $rental->slug, 'lang' => $locale]) }}" class="btn btn-primary btn-lg">
-                            {{ str_replace(':name', $rental->name, $opening['enter']) }} <span aria-hidden="true">→</span>
-                        </a>
-                    @empty
-                        <p class="empty-note">{{ $opening['empty'] }}</p>
-                    @endforelse
-                </div>
             </div>
 
-            <div class="opening-stage" aria-hidden="true">
-                <img src="{{ asset('images/character/agent-greeting.svg') }}" alt="" class="agent-figure" fetchpriority="high">
+            <div class="opening-actions">
+                @forelse ($rentals as $rental)
+                    <a href="{{ route('rental.show', ['rentalSlug' => $rental->slug, 'lang' => $locale]) }}" class="btn btn-primary btn-lg">
+                        {{ str_replace(':name', $rental->name, $opening['enter']) }} <span aria-hidden="true">→</span>
+                    </a>
+                @empty
+                    <p class="empty-note">{{ $opening['empty'] }}</p>
+                @endforelse
             </div>
         </div>
     </main>
-</body>
 </html>

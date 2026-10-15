@@ -276,7 +276,6 @@ class RentalPageController extends Controller
             'vehicles' => $vehicles,
             'locale' => $locale,
             'scene' => $scene,
-            'backdrop' => $this->sceneBackdrop($scene),
             'menuItems' => $this->stageMenu($rental, $locale, $labels, $showroom),
             'supportedLocales' => self::SUPPORTED_LOCALES,
             'labels' => $labels,
@@ -293,27 +292,6 @@ class RentalPageController extends Controller
                 ->orderBy('sort_order')->get()->groupBy('category'),
             'services' => $services,
             'sceneNarrations' => $this->sceneNarrations($rental, $services, $locale),
-        ];
-    }
-
-    /**
-     * The agent mascot: the pose shown on the page (`character`) and the picture her
-     * round avatars crop their face from.
-     *
-     * @return array{character: string, avatarImage: string, avatarZoom: string, avatarFocus: string}
-     */
-    private function sceneBackdrop(string $scene): array
-    {
-        $poses = [
-            'showroom' => 'presenting', 'vehicles' => 'presenting', 'vehicle' => 'presenting', 'services' => 'key',
-            'service' => 'key', 'info' => 'presenting', 'staff' => 'greeting', 'reservation' => 'tablet',
-        ];
-
-        return [
-            'character' => asset('images/character/agent-'.($poses[$scene] ?? 'presenting').'.svg'),
-            'avatarImage' => asset('images/character/agent-greeting.svg'),
-            'avatarZoom' => '236%',
-            'avatarFocus' => '50% 6%',
         ];
     }
 

@@ -120,11 +120,11 @@
         </div>
 
         <div class="wizard-done" data-wizard-done hidden>
-            <p class="eyebrow">{{ $wizard['done_title'] }}</p>
+            <p class="panel-title">{{ $wizard['done_title'] }}</p>
             <p class="wizard-reference-label">{{ $wizard['reference'] }}</p>
             <p class="wizard-reference" data-done-reference></p>
             <p class="wizard-status">{{ $wizard['awaiting'] }}</p>
-            <p class="mt-4 max-w-md text-sm leading-relaxed text-slate-600">{{ $wizard['done_hint'] }}</p>
+            <p class="wizard-done-hint">{{ $wizard['done_hint'] }}</p>
             <div class="mt-6 flex flex-wrap gap-3">
                 <a class="btn btn-primary" data-done-whatsapp target="_blank" rel="noopener" hidden>{{ $wizard['send_whatsapp'] }} <span aria-hidden="true">↗</span></a>
                 <a class="wizard-secondary" data-done-phone hidden>{{ $wizard['call_rental'] }}</a>

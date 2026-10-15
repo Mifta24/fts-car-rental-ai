@@ -17,7 +17,7 @@
     @include('rental.agent', ['text' => $vehicleNarrations['vehicle'][$vehicle->slug], 'key' => 'vehicle-'.$vehicle->slug])
 
     <div class="scene-content">
-        <section class="panel panel-light panel-fill" aria-label="{{ $showroom['vehicle_scene'] }}">
+        <section class="panel panel-fill" aria-label="{{ $showroom['vehicle_scene'] }}">
             <div class="vdetail">
                 <div data-vehicle-gallery class="vgallery">
                     <div class="vgallery-main">

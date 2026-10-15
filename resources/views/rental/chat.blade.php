@@ -46,7 +46,7 @@
             <div class="chat-panel" role="dialog" aria-label="{{ $labels['chat_heading'] }}">
                 <section id="agent-chat-log" class="chat-log" aria-label="{{ $labels['chat_heading'] }}" aria-hidden="true">
                     <header class="chat-log-header">
-                        <span class="chat-host-avatar chat-host-avatar-lg" aria-hidden="true"></span>
+                        <span class="chat-mark chat-mark-lg" aria-hidden="true">AI</span>
                         <div class="min-w-0 flex-1">
                             <p class="chat-title">
                                 {{ $labels['chat_heading'] }}
@@ -61,7 +61,7 @@
                     <div data-messages role="log" aria-live="polite" aria-label="{{ $labels['chat_heading'] }}" class="chat-log-messages space-y-3"></div>
 
                     <div data-thinking-indicator class="chat-thinking" role="status" hidden>
-                        <span class="chat-host-avatar" aria-hidden="true"></span>
+                        <span class="chat-mark" aria-hidden="true">AI</span>
                         <span class="chat-thinking-bubble">
                             <span class="chat-thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
                             <span>{{ $labels['thinking'] }}</span>
@@ -104,7 +104,7 @@
             </div>
 
             <button type="button" data-chat-launcher class="chat-launcher" aria-controls="agent-chat-log" aria-expanded="false">
-                <span class="chat-host-avatar chat-host-avatar-lg" aria-hidden="true"></span>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-7l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5Z"/></svg>
                 <span class="chat-launcher-text"><strong>{{ $labels['chat_heading'] }}</strong><small>{{ $showroom['available'] }}</small></span>
                 <span class="chat-launcher-dot" aria-hidden="true"></span>
             </button>

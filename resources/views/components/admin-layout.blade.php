@@ -9,14 +9,17 @@
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-slate-50 text-slate-900 antialiased">
+<body class="admin-theme antialiased">
     <div class="flex min-h-screen">
-        <aside class="w-56 shrink-0 border-r border-slate-200 bg-white">
-            <div class="border-b border-slate-200 px-4 py-4">
-                <p class="text-sm font-semibold text-slate-900">{{ auth()->user()?->currentRental()?->name }}</p>
-                <p class="text-xs text-slate-500">Admin Dashboard</p>
+        <aside class="admin-side w-60 shrink-0">
+            <div class="admin-brand border-b border-slate-200 px-5 py-5">
+                <span class="rental-monogram" aria-hidden="true">{{ mb_substr((string) auth()->user()?->currentRental()?->name, 0, 1) ?: 'F' }}</span>
+                <div>
+                    <p class="text-sm font-semibold text-slate-900">{{ auth()->user()?->currentRental()?->name }}</p>
+                    <p class="text-xs text-slate-500">Admin Dashboard</p>
+                </div>
             </div>
-            <nav class="space-y-1 px-2 py-4 text-sm">
+            <nav class="space-y-1 px-3 py-4 text-sm">
                 @php
                     $navItems = [
                         ['route' => 'admin.dashboard', 'label' => 'Dashboard'],
@@ -29,13 +32,14 @@
                 @foreach ($navItems as $item)
                     <a
                         href="{{ route($item['route']) }}"
-                        class="block rounded-lg px-3 py-2 {{ request()->routeIs($item['route'].'*') ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}"
+                        class="admin-nav-link"
+                        @if (request()->routeIs($item['route'].'*')) aria-current="page" @endif
                     >{{ $item['label'] }}</a>
                 @endforeach
             </nav>
-            <form method="POST" action="{{ route('admin.logout') }}" class="border-t border-slate-200 p-2">
+            <form method="POST" action="{{ route('admin.logout') }}" class="border-t border-slate-200 p-3">
                 @csrf
-                <button type="submit" class="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-500 hover:bg-slate-100">Log out</button>
+                <button type="submit" class="admin-nav-link w-full text-left">Log out</button>
             </form>
         </aside>
 
@@ -48,7 +52,7 @@
                 @endif
 
                 <div class="mb-6 flex items-center justify-between">
-                    <h1 class="text-xl font-semibold text-slate-900">{{ $title ?? 'Dashboard' }}</h1>
+                    <h1 class="text-3xl font-medium tracking-tight text-slate-900">{{ $title ?? 'Dashboard' }}</h1>
                     {{ $actions ?? '' }}
                 </div>
 

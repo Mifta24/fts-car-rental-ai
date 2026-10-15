@@ -28,7 +28,7 @@
                 <form method="POST" action="{{ route('admin.handovers.reply', $handover) }}" class="flex items-center gap-2 border-t border-slate-200 p-3">
                     @csrf
                     <input type="text" name="message" required placeholder="Reply to the customer…" class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Send</button>
+                    <button type="submit" class="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Send</button>
                 </form>
             @endif
         </div>

@@ -194,7 +194,7 @@ class RentalSiteTest extends TestCase
             ->assertSee('href="'.route('rental.services', ['rentalSlug' => 'demo', 'lang' => 'id']).'"', false)
             ->assertSee('href="'.route('rental.info', ['rentalSlug' => 'demo', 'lang' => 'id']).'"', false)
             ->assertSee('href="'.route('rental.staff', ['rentalSlug' => 'demo', 'lang' => 'id']).'"', false)
-            ->assertSee('class="action-grid"', false);
+            ->assertSee('class="hero-ways"', false);
 
         $this->get('/demo/vehicles?lang=id')
             ->assertOk()
@@ -453,20 +453,18 @@ class RentalSiteTest extends TestCase
         $this->assertSame(1, substr_count($navigation, 'aria-current="page"'));
     }
 
-    public function test_each_page_shows_the_agent_mascot_in_its_own_pose(): void
+    public function test_pages_show_the_agent_line_without_a_mascot_figure(): void
     {
         $rental = Rental::create(['name' => 'Demo', 'slug' => 'demo', 'public_status' => 'published', 'currency' => 'IDR']);
         $rental->vehicles()->create(['name' => 'City Car', 'slug' => 'city-car', 'base_price' => 950000, 'seats' => 2, 'is_active' => true]);
 
-        $this->get('/demo')
-            ->assertOk()
-            ->assertSee('class="agent-figure is-mirrored"', false)
-            ->assertSee('images/character/agent-presenting.svg', false);
-        $this->get('/demo/reservation')->assertOk()->assertSee('images/character/agent-tablet.svg', false);
-        $this->get('/demo/staff')->assertOk()->assertSee('images/character/agent-greeting.svg', false);
-
-        // the avatars crop their face out of the greeting pose
-        $this->get('/demo/info')->assertOk()->assertSee('--agent-image: url(\'', false)->assertSee('agent-greeting.svg', false);
+        foreach (['/demo', '/demo/vehicles', '/demo/reservation', '/demo/staff', '/demo/info'] as $path) {
+            $this->get($path)
+                ->assertOk()
+                ->assertSee('data-narrator', false)
+                ->assertDontSee('agent-figure', false)
+                ->assertDontSee('images/character/', false);
+        }
     }
 
     public function test_service_icons_follow_what_the_entry_is_about(): void

@@ -201,7 +201,8 @@ function initAgent() {
 
     function avatarMark() {
         const el = document.createElement('span');
-        el.className = 'chat-host-avatar';
+        el.className = 'chat-mark';
+        el.textContent = 'AI';
         el.setAttribute('aria-hidden', 'true');
         return el;
     }
