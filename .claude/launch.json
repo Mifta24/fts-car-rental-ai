@@ -1,0 +1,24 @@
+{
+    "version": "0.0.1",
+    "configurations": [
+        {
+            "name": "car-rental-ai-dev",
+            "runtimeExecutable": "php",
+            "runtimeArgs": [
+                "artisan",
+                "dev"
+            ],
+            "port": 8000
+        },
+        {
+            "name": "car-rental-ai-serve",
+            "runtimeExecutable": "php",
+            "runtimeArgs": [
+                "artisan",
+                "serve",
+                "--port=8000"
+            ],
+            "port": 8000
+        }
+    ]
+}
