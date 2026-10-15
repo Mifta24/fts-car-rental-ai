@@ -152,6 +152,23 @@ function initNarrators() {
         states.get(element).timer = window.setTimeout(step, 180);
     }
 
+    /** The agent says something new: retype the bubble (used when a deck turns to the next car). */
+    function say(element, text) {
+        const state = states.get(element);
+        if (!state) return;
+
+        stopSpeech(element);
+        if (state.timer) window.clearTimeout(state.timer);
+        state.timer = null;
+
+        element.querySelector('[data-narrator-text]').dataset.text = text;
+        const screenReaderText = element.querySelector('[data-narrator-sr]');
+        if (screenReaderText) screenReaderText.textContent = text;
+
+        if (reducedMotion) reveal(element);
+        else type(element);
+    }
+
     async function speak(element) {
         const state = states.get(element);
         const button = element.querySelector('[data-narrator-listen]');
@@ -230,6 +247,10 @@ function initNarrators() {
         });
     }
 
+    window.addEventListener('narrator:say', (event) => {
+        const element = narrators.find(isVisible);
+        if (element && event.detail?.text) say(element, event.detail.text);
+    });
     window.addEventListener('hashchange', () => window.requestAnimationFrame(refresh));
     window.addEventListener('pagehide', () => { if (canSpeak) window.speechSynthesis.cancel(); });
     window.requestAnimationFrame(refresh);

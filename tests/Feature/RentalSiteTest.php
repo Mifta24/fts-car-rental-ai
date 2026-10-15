@@ -20,10 +20,9 @@ class RentalSiteTest extends TestCase
             ->assertOk()
             ->assertSee('FTS Car Rental AI')
             ->assertSee('Enter Demo')
-            ->assertSee('href="'.route('rental.vehicles', ['rentalSlug' => 'demo', 'lang' => 'en']).'"', false)
-            ->assertSee('href="'.route('rental.services', ['rentalSlug' => 'demo', 'lang' => 'en']).'"', false)
-            ->assertSee('href="'.route('rental.reservation', ['rentalSlug' => 'demo', 'lang' => 'en']).'"', false)
-            ->assertSee('href="'.route('rental.staff', ['rentalSlug' => 'demo', 'lang' => 'en']).'"', false)
+            ->assertSee('href="'.route('rental.show', ['rentalSlug' => 'demo', 'lang' => 'en']).'"', false)
+            // the opening is one screen with a single way in, not a menu
+            ->assertDontSee('href="'.route('rental.vehicles', ['rentalSlug' => 'demo', 'lang' => 'en']).'"', false)
             ->assertDontSee('Draft');
     }
 
@@ -101,12 +100,12 @@ class RentalSiteTest extends TestCase
             ->assertSee('Airport delivery')
             ->assertDontSee('Hidden perk')
             ->assertDontSee('Other perk')
-            ->assertSee('class="service-card"', false)
+            ->assertSee('class="service-tile"', false)
             ->assertSee('https://example.test/delivery.jpg', false)
-            ->assertSee('class="site-header"', false)
-            ->assertSee('class="page-hero"', false);
-        $this->get('/demo?lang=en')->assertOk()->assertSee('The right car for your trip,')->assertSee('ready when you are.');
-        $this->get('/demo?lang=ja')->assertOk()->assertSee('旅にぴったりの一台を、');
+            ->assertSee('class="stage-top"', false)
+            ->assertSee('data-deck', false);
+        $this->get('/demo?lang=en')->assertOk()->assertSee('Welcome to your virtual showroom.')->assertSee('The right car, ready when you are.');
+        $this->get('/demo?lang=ja')->assertOk()->assertSee('ようこそバーチャルショールーム。');
     }
 
     public function test_unpublished_showroom_is_not_accessible(): void
@@ -134,11 +133,9 @@ class RentalSiteTest extends TestCase
             ->assertOk()
             ->assertSee('City Car')
             ->assertSee('Family Van')
-            // the fleet browser: one card per active car, filterable by body type
-            ->assertSee('class="section section-flush fleet-panel"', false)
-            ->assertSee('data-fleet-card', false)
-            ->assertSee('data-fleet-filter="suv"', false)
-            ->assertSee('2 cars')
+            // the fleet is a deck: one car on screen at a time
+            ->assertSee('data-deck', false)
+            ->assertSeeInOrder(['City Car', 'Family Van'])
             ->assertSee('href="'.route('rental.vehicle', ['rentalSlug' => 'demo', 'vehicleSlug' => 'city-car', 'lang' => 'en']).'"', false)
             ->assertDontSee('Retired Vehicle')
             ->assertDontSee('Foreign Vehicle');
@@ -197,9 +194,7 @@ class RentalSiteTest extends TestCase
             ->assertSee('href="'.route('rental.services', ['rentalSlug' => 'demo', 'lang' => 'id']).'"', false)
             ->assertSee('href="'.route('rental.info', ['rentalSlug' => 'demo', 'lang' => 'id']).'"', false)
             ->assertSee('href="'.route('rental.staff', ['rentalSlug' => 'demo', 'lang' => 'id']).'"', false)
-            ->assertSee('class="search-card"', false)
-            ->assertSee('name="pickup_date"', false)
-            ->assertSee('City Car');
+            ->assertSee('class="action-grid"', false);
 
         $this->get('/demo/vehicles?lang=id')
             ->assertOk()
@@ -348,7 +343,7 @@ class RentalSiteTest extends TestCase
     {
         Rental::create(['name' => 'Demo', 'slug' => 'demo', 'public_status' => 'published']);
 
-        $this->get('/demo?lang=id')->assertOk()->assertSee('Mobil yang tepat untuk perjalanan Anda,')->assertSee('Cari mobil Anda');
+        $this->get('/demo?lang=id')->assertOk()->assertSee('Selamat datang di showroom virtual Anda.')->assertSee('Jelajahi rental kami');
         $this->get('/?lang=en')->assertOk()->assertSee('data-sound-toggle', false)->assertSee('Welcome to');
     }
 
@@ -381,7 +376,7 @@ class RentalSiteTest extends TestCase
     {
         Rental::create(['name' => 'Demo', 'slug' => 'demo', 'public_status' => 'published']);
 
-        $this->get('/demo/vehicles?lang=en')->assertOk()->assertDontSee('data-key="vehicles"', false)->assertDontSee('Here is our fleet');
+        $this->get('/demo/vehicles?lang=en')->assertOk()->assertDontSee('Here is our fleet')->assertDontSee('data-deck', false)->assertSee('Our fleet information will be available soon.');
     }
 
     public function test_the_agent_introduces_services_and_rental_information_from_stored_data(): void
@@ -419,7 +414,7 @@ class RentalSiteTest extends TestCase
 
         $this->get('/bare/info?lang=en')
             ->assertOk()
-            ->assertSee('Welcome to Bare. Our counter is open from 08:00 to 20:00. Below you will find the address')
+            ->assertSee('Welcome to Bare. Our counter is open from 08:00 to 20:00. On screen you will find our address')
             ->assertDontSee('We are located in');
     }
 
@@ -446,16 +441,15 @@ class RentalSiteTest extends TestCase
 
         $this->get('/demo/vehicles/family-van?lang=id')
             ->assertOk()
-            ->assertSee('class="booking-card"', false)
             ->assertSee('class="price-plate"', false)
             ->assertSee('IDR 2.200.000')
-            ->assertSee('Mobil lain yang mungkin cocok')
-            ->assertSee('City Car')
+            ->assertSee('rel="prev"', false)
+            ->assertSee(e(route('rental.vehicle', ['rentalSlug' => 'demo', 'vehicleSlug' => 'city-car', 'lang' => 'id'])), false)
             ->assertDontSee('Retired Vehicle')
             ->assertSee('href="'.e(route('rental.reservation', ['rentalSlug' => 'demo', 'lang' => 'id', 'vehicle' => 'family-van'])).'"', false);
 
         // the header marks the fleet as the current section on its detail pages
-        $navigation = Str::before(Str::after($this->get('/demo/vehicles/family-van?lang=id')->getContent(), '<nav class="site-nav"'), '</nav>');
+        $navigation = Str::before(Str::after($this->get('/demo/vehicles/family-van?lang=id')->getContent(), '<nav class="stage-nav"'), '</nav>');
         $this->assertSame(1, substr_count($navigation, 'aria-current="page"'));
     }
 
@@ -466,8 +460,7 @@ class RentalSiteTest extends TestCase
 
         $this->get('/demo')
             ->assertOk()
-            ->assertSee('images/hero.webp', false)
-            ->assertSee('class="hero-mascot"', false)
+            ->assertSee('class="agent-figure is-mirrored"', false)
             ->assertSee('images/character/agent-presenting.svg', false);
         $this->get('/demo/reservation')->assertOk()->assertSee('images/character/agent-tablet.svg', false);
         $this->get('/demo/staff')->assertOk()->assertSee('images/character/agent-greeting.svg', false);

@@ -347,6 +347,7 @@ function initAgent() {
         inputEl.disabled = disabled;
         submitEl.disabled = disabled;
         if (launcher) launcher.disabled = busy || !ready;
+        document.querySelectorAll('[data-ask-form] input, [data-ask-form] button').forEach((el) => { el.disabled = disabled; });
         root.setAttribute('aria-busy', String(busy));
         document.body.classList.toggle('is-thinking', busy);
         if (thinkingIndicator) {

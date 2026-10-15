@@ -1,6 +1,9 @@
 @props(['name'])
 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" {{ $attributes }}>
     @switch($name)
+        @case('home')
+            <path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1v-7.5Z"/>
+            @break
         @case('vehicles')
             <path d="M3 16.5h18M4 16.5v-3.2l1.8-4.3h9.4l3.3 4.3V16.5"/><circle cx="7.5" cy="17.5" r="1.7"/><circle cx="16.5" cy="17.5" r="1.7"/><path d="M9 9l-.8 3.5M13 9v3.5"/>
             @break
