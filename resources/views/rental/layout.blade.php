@@ -12,6 +12,11 @@
         'contact' => [$site['nav_contact'], route('rental.staff', ['rentalSlug' => $rental->slug, 'lang' => $locale]), 'staff'],
     ];
     $heroImage = file_exists(public_path('images/hero-car.webp')) ? asset('images/hero-car.webp') : null;
+    $sceneBackdrop = ['showroom' => 'showroom', 'vehicles' => 'fleet', 'vehicle' => 'fleet', 'services' => 'services', 'service' => 'services', 'info' => 'info', 'reservation' => 'reservation', 'staff' => 'staff'][$scene] ?? null;
+    $bodyStyle = collect([
+        $heroImage ? "--hero-image: url('{$heroImage}')" : null,
+        $sceneBackdrop ? "--scene-image: url('".asset("images/scenes/{$sceneBackdrop}.webp")."')" : null,
+    ])->filter()->implode('; ');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', $locale) }}">
@@ -24,7 +29,7 @@
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="stage" data-showroom data-scene="{{ $scene }}" @if($heroImage) style="--hero-image: url('{{ $heroImage }}')" @endif>
+<body class="stage" data-showroom data-scene="{{ $scene }}" @if($bodyStyle) style="{{ $bodyStyle }}" @endif>
     <a href="#content" class="skip-link">{{ $site['skip'] }}</a>
     <div class="stage-bg" aria-hidden="true"></div>
 

@@ -65,8 +65,8 @@ body.stage :focus-visible { outline: 2px solid var(--lime); outline-offset: 3px;
 /* A dim studio: a soft light high on the right, falling away to black. A hero
    photo dropped at public/images/hero-car.webp is picked up by the layout. */
 .stage-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: radial-gradient(120% 80% at 68% 0%, #3a3a3e 0%, #1d1d20 38%, var(--bg) 74%); }
-.stage-bg::before { content: ''; position: absolute; inset: 0; background: var(--hero-image, none) 62% 70% / cover no-repeat; opacity: 0; }
-body[data-scene="showroom"] .stage-bg::before, .stage-opening .stage-bg::before { opacity: 1; }
+.stage-bg::before { content: ''; position: absolute; inset: 0; background: var(--scene-image, var(--hero-image, none)) 62% 70% / cover no-repeat; opacity: .55; filter: blur(2px); transform: scale(1.04); }
+body[data-scene="showroom"] .stage-bg::before, .stage-opening .stage-bg::before { opacity: 1; filter: none; transform: none; }
 .stage-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #0b0b0ce0 0%, #0b0b0c80 46%, #0b0b0c33 100%), linear-gradient(180deg, #0b0b0c66 0%, transparent 28%, transparent 52%, #0b0b0cf2 100%); }
 
 .stage-top { position: relative; z-index: 30; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; padding-inline: var(--gutter); }
