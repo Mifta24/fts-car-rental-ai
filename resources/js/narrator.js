@@ -39,8 +39,12 @@ function initNarrators() {
             });
     }
 
+    const femaleNames = /\b(kyoko|ayumi|haruka|nanami|mizuki|yuna|sachiko|eiko|akari|hina|mai|damayanti|gadis|samantha|karen|victoria|susan|zira|jenny|aria|female|woman|girl)\b/i;
+    const maleNames = /\b(otoya|ichiro|takumi|keita|daniel|alex|fred|aaron|david|mark|george|guy|ryan|eric|male|man)\b/i;
+    const voiceName = (voice) => `${voice.name} ${voice.voiceURI || ''}`;
+
     function maleVoiceName(voice) {
-        return /\b(otoya|ichiro|takumi|male|man)\b/i.test(`${voice.name} ${voice.voiceURI || ''}`);
+        return maleNames.test(voiceName(voice)) && !femaleNames.test(voiceName(voice));
     }
 
     function chooseVoice(element) {
@@ -48,22 +52,14 @@ function initNarrators() {
         const voices = voicesForLocale(lang);
         if (!voices.length) return null;
 
-        const femaleNames = /\b(kyoko|ayumi|haruka|nanami|mizuki|yuna|sachiko|eiko|akari|hina|mai|female|woman|girl)\b/i;
-        const maleNames = /\b(otoya|ichiro|takumi|male|man)\b/i;
-        const preferredFemaleVoice = voices.find((voice) => femaleNames.test(`${voice.name} ${voice.voiceURI || ''}`));
-
-        if (element.dataset.voicePreference === 'female' && preferredFemaleVoice) {
-            return preferredFemaleVoice;
-        }
-
         return voices
             .map((voice, index) => {
-                const name = `${voice.name} ${voice.voiceURI || ''}`;
+                const name = voiceName(voice);
                 let score = (voice.lang.toLowerCase() === lang.toLowerCase() ? 30 : 0) + (voice.localService ? 4 : 0) - index;
 
-                if (element.dataset.voicePreference === 'female') {
-                    if (femaleNames.test(name)) score += 100;
-                    if (maleNames.test(name)) score -= 100;
+                if (element.dataset.voicePreference === 'male') {
+                    if (maleNames.test(name)) score += 100;
+                    if (femaleNames.test(name)) score -= 100;
                 }
 
                 return { voice, score };
@@ -190,7 +186,7 @@ function initNarrators() {
         utterance.lang = element.dataset.lang;
         const voice = chooseVoice(element);
         if (voice) utterance.voice = voice;
-        if (element.dataset.lang === 'ja-JP' && (!voice || maleVoiceName(voice))) utterance.pitch = 1.12;
+        if (!voice || !maleVoiceName(voice)) utterance.pitch = 0.75;
         utterance.onend = utterance.onerror = () => {
             if (state.speaking) stopSpeech(element);
         };
