@@ -19,7 +19,7 @@ Satu aplikasi bisa melayani beberapa perusahaan rental. Setiap rental punya hala
 - Dashboard ringkasan.
 - CRUD **armada** (spesifikasi: kursi, bagasi, transmisi, bahan bakar, tipe bodi, fitur, tarif sopir, gambar, dan inventori harian).
 - CRUD **knowledge items**, yaitu basis pengetahuan yang menjadi sumber jawaban agen (syarat sewa, layanan, paket, pengantaran, FAQ).
-- Daftar **booking** dan ubah statusnya (`pending`, `confirmed`, `cancelled`).
+- Daftar **booking** dan ubah statusnya (`pending`, `confirmed`, `cancelled`, `expired`). Booking yang dibatalkan atau kedaluwarsa bisa dibuka dan dikonfirmasi lagi selama mobilnya masih tersedia.
 - **Handover**: percakapan yang diserahkan agen ke staf. Staf bisa membalas langsung ke pelanggan dan menandainya selesai.
 - Peran pengguna per rental: `owner` dan `staff`.
 
@@ -181,6 +181,7 @@ vendor/bin/pint --dirty
 - Set `APP_ENV=production` dan `APP_DEBUG=false`.
 - Seeder demo tidak jalan di produksi. Buat akun owner dan rental Anda sendiri.
 - Pastikan server aplikasi bisa menjangkau `LOCAL_LLM_BASE_URL`. Pada setup saat ini endpoint LLM diakses lewat Tailscale.
+- Jalankan scheduler Laravel (`php artisan schedule:work`, atau cron `* * * * * php artisan schedule:run`). Ia menjalankan `bookings:expire-pending` setiap jam (permintaan `pending` yang tidak dijawab 48 jam menjadi `expired` dan mobilnya kembali ke inventori) dan `conversations:prune` setiap hari (percakapan tanpa aktivitas lebih dari 90 hari dihapus, kecuali yang handover-nya masih terbuka; booking tetap disimpan).
 - Karena ada batas 100 detik dari Cloudflare, jangan menaikkan batas waktu respons agen melebihi 85 detik.
 
 ## Lisensi

@@ -97,6 +97,10 @@ class VehicleController extends Controller
             'features' => ['nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'new_images' => ['nullable', 'array'],
+            'new_images.*.url' => ['nullable', 'url:http,https', 'max:2048'],
+            'new_images.*.alt' => ['nullable', 'string', 'max:255'],
+            'new_images.*.tags' => ['nullable', 'string', 'max:255'],
         ]);
 
         $features = collect(explode(',', (string) ($data['features'] ?? '')))
