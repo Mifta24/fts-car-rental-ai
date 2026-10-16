@@ -19,47 +19,6 @@ class ReservationController extends Controller
 
     private const PHONE_PATTERN = '/^\+?[0-9\s\-().]{6,20}$/';
 
-    /**
-     * Customer-facing validation messages, keyed by locale.
-     *
-     * @var array<string, array<string, string>>
-     */
-    public const MESSAGES = [
-        'en' => [
-            'invalid' => 'Please check this field.',
-            'pickup_date_past' => 'Pick-up date cannot be in the past.',
-            'return_date_after' => 'Return date must be after the pick-up date.',
-            'too_long' => 'Rentals are limited to :max days online. Please contact our team for longer rentals.',
-            'vehicle_unknown' => 'Please choose a car.',
-            'capacity' => 'This car does not seat that many passengers. Choose a larger car or add more units.',
-            'unavailable' => 'This car is not available for those dates.',
-            'contact_email' => 'Please enter a valid email address.',
-            'contact_phone' => 'Please enter a valid phone or WhatsApp number.',
-        ],
-        'id' => [
-            'invalid' => 'Mohon periksa kolom ini.',
-            'pickup_date_past' => 'Tanggal pengambilan tidak boleh di masa lalu.',
-            'return_date_after' => 'Tanggal pengembalian harus setelah tanggal pengambilan.',
-            'too_long' => 'Sewa online dibatasi :max hari. Hubungi tim kami untuk sewa yang lebih lama.',
-            'vehicle_unknown' => 'Silakan pilih mobil.',
-            'capacity' => 'Mobil ini tidak cukup untuk jumlah penumpang tersebut. Pilih mobil yang lebih besar atau tambah unit.',
-            'unavailable' => 'Mobil ini tidak tersedia pada tanggal tersebut.',
-            'contact_email' => 'Masukkan alamat email yang valid.',
-            'contact_phone' => 'Masukkan nomor telepon atau WhatsApp yang valid.',
-        ],
-        'ja' => [
-            'invalid' => 'この項目をご確認ください。',
-            'pickup_date_past' => '受取日は過去にできません。',
-            'return_date_after' => '返却日は受取日より後にしてください。',
-            'too_long' => 'オンラインでのご予約は最大:max日までです。それ以上はスタッフにご相談ください。',
-            'vehicle_unknown' => '車両を選択してください。',
-            'capacity' => 'この車両では乗車人数に対応できません。より大きな車両を選ぶか、台数を増やしてください。',
-            'unavailable' => 'この日程では、この車両はご利用いただけません。',
-            'contact_email' => '有効なメールアドレスを入力してください。',
-            'contact_phone' => '有効な電話番号またはWhatsApp番号を入力してください。',
-        ],
-    ];
-
     public function __construct(
         private readonly ReservationService $reservations,
         private readonly ReservationHandover $handover,
@@ -93,7 +52,7 @@ class ReservationController extends Controller
     {
         $rental = $this->publishedRental($rentalSlug);
         $locale = $this->locale($request, $rental);
-        $messages = self::MESSAGES[$locale];
+        $messages = trans('reservation.messages', [], $locale);
 
         $data = $request->validate([
             ...$this->tripRules($rental),
@@ -169,7 +128,7 @@ class ReservationController extends Controller
      */
     private function validationMessages(string $locale): array
     {
-        $messages = self::MESSAGES[$locale];
+        $messages = trans('reservation.messages', [], $locale);
 
         return [
             'required' => $messages['invalid'],
@@ -191,7 +150,7 @@ class ReservationController extends Controller
      */
     private function resolveTrip(Rental $rental, array $data, string $locale): array
     {
-        $messages = self::MESSAGES[$locale];
+        $messages = trans('reservation.messages', [], $locale);
 
         $vehicle = $rental->vehicles()->where('is_active', true)->where('slug', $data['vehicle_slug'])->first();
 
@@ -248,7 +207,7 @@ class ReservationController extends Controller
             ->filter()
             ->values();
 
-        $message = self::MESSAGES[$locale]['unavailable'];
+        $message = trans('reservation.messages', [], $locale)['unavailable'];
 
         return response()->json([
             'message' => $message,

@@ -20,7 +20,7 @@ class BookingController extends Controller
     {
         $rental = $this->currentRental($request);
 
-        $status = in_array($request->query('status'), [Booking::STATUS_PENDING, Booking::STATUS_CONFIRMED, Booking::STATUS_CANCELLED], true)
+        $status = in_array($request->query('status'), [Booking::STATUS_PENDING, Booking::STATUS_CONFIRMED, Booking::STATUS_CANCELLED, Booking::STATUS_EXPIRED], true)
             ? $request->query('status')
             : null;
 
@@ -43,8 +43,16 @@ class BookingController extends Controller
             'status' => ['required', 'in:'.implode(',', [Booking::STATUS_CONFIRMED, Booking::STATUS_CANCELLED])],
         ]);
 
-        if ($data['status'] === Booking::STATUS_CANCELLED && $booking->status !== Booking::STATUS_CANCELLED) {
-            $this->reservations->releaseInventory($booking);
+        if ($booking->status === $data['status']) {
+            return back();
+        }
+
+        if ($data['status'] === Booking::STATUS_CANCELLED) {
+            if ($booking->holdsInventory()) {
+                $this->reservations->releaseInventory($booking);
+            }
+        } elseif (! $booking->holdsInventory() && ! $this->reservations->holdInventory($booking)) {
+            return back()->with('error', "Booking {$booking->reference} cannot be confirmed: the car is no longer available for those dates.");
         }
 
         $booking->update(['status' => $data['status']]);

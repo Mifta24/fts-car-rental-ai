@@ -1,6 +1,6 @@
 <x-admin-layout title="Bookings">
     <div class="mb-4 flex gap-2 text-sm">
-        @foreach (['' => 'All', 'pending' => 'Pending', 'confirmed' => 'Confirmed', 'cancelled' => 'Cancelled'] as $value => $label)
+        @foreach (['' => 'All', 'pending' => 'Pending', 'confirmed' => 'Confirmed', 'cancelled' => 'Cancelled', 'expired' => 'Expired'] as $value => $label)
             <a href="{{ route('admin.bookings.index', $value ? ['status' => $value] : []) }}"
                 class="rounded-full px-3 py-1 {{ $status === $value || (! $status && $value === '') ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300 text-slate-600' }}">
                 {{ $label }}
@@ -38,16 +38,18 @@
                                 'rounded-full px-2 py-0.5 text-xs',
                                 'bg-orange-100 text-orange-700' => $booking->status === 'pending',
                                 'bg-emerald-100 text-emerald-700' => $booking->status === 'confirmed',
-                                'bg-slate-100 text-slate-500' => $booking->status === 'cancelled',
+                                'bg-slate-100 text-slate-500' => in_array($booking->status, ['cancelled', 'expired'], true),
                             ])>{{ ucfirst($booking->status) }}</span>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            @if ($booking->status === 'pending')
+                            @if (in_array($booking->status, ['pending', 'cancelled', 'expired'], true))
                                 <form method="POST" action="{{ route('admin.bookings.status', $booking) }}" class="inline">
                                     @csrf @method('PATCH')
                                     <input type="hidden" name="status" value="confirmed">
-                                    <button type="submit" class="text-emerald-600 hover:underline">Confirm</button>
+                                    <button type="submit" class="text-emerald-600 hover:underline">{{ $booking->status === 'pending' ? 'Confirm' : 'Reopen & confirm' }}</button>
                                 </form>
+                            @endif
+                            @if (in_array($booking->status, ['pending', 'confirmed'], true))
                                 <form method="POST" action="{{ route('admin.bookings.status', $booking) }}" class="inline" onsubmit="return confirm('Cancel this booking?')">
                                     @csrf @method('PATCH')
                                     <input type="hidden" name="status" value="cancelled">

@@ -51,6 +51,12 @@
                     </div>
                 @endif
 
+                @if (session('error'))
+                    <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
                 <div class="mb-6 flex items-center justify-between">
                     <h1 class="text-3xl font-medium tracking-tight text-slate-900">{{ $title ?? 'Dashboard' }}</h1>
                     {{ $actions ?? '' }}

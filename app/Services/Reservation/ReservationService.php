@@ -20,6 +20,12 @@ class ReservationService
     public const MAX_DAYS = 30;
 
     /**
+     * How long an unanswered request keeps its cars off the market before the
+     * units go back to the inventory.
+     */
+    public const PENDING_HOLD_HOURS = 48;
+
+    /**
      * Whether the requested party fits the vehicle across the requested units.
      */
     public function fitsPassengers(Vehicle $vehicle, int $passengers, int $units): bool
@@ -141,6 +147,59 @@ class ReservationService
     public function releaseInventory(Booking $booking): void
     {
         $this->adjustInventory($booking, -1);
+    }
+
+    /**
+     * Takes the units of a booking that had given them back (cancelled or
+     * expired) out of the inventory again. Returns false, and changes nothing,
+     * when those days can no longer host it.
+     */
+    public function holdInventory(Booking $booking): bool
+    {
+        return DB::transaction(function () use ($booking) {
+            $quote = $this->quote(
+                $booking->vehicle,
+                CarbonImmutable::parse($booking->pickup_date),
+                CarbonImmutable::parse($booking->return_date),
+                $booking->unit_count,
+                lockForUpdate: true,
+            );
+
+            if (! $quote) {
+                return false;
+            }
+
+            $this->adjustInventory($booking, +1);
+
+            return true;
+        });
+    }
+
+    /**
+     * Expires pending requests nobody has answered within the hold period and
+     * gives their units back. Returns how many were expired.
+     */
+    public function expirePending(): int
+    {
+        $expired = 0;
+
+        Booking::where('status', Booking::STATUS_PENDING)
+            ->where('created_at', '<=', now()->subHours(self::PENDING_HOLD_HOURS))
+            ->each(function (Booking $booking) use (&$expired) {
+                DB::transaction(function () use ($booking, &$expired) {
+                    $locked = Booking::whereKey($booking->id)->lockForUpdate()->first();
+
+                    if ($locked?->status !== Booking::STATUS_PENDING) {
+                        return;
+                    }
+
+                    $this->releaseInventory($locked);
+                    $locked->update(['status' => Booking::STATUS_EXPIRED]);
+                    $expired++;
+                });
+            });
+
+        return $expired;
     }
 
     private function adjustInventory(Booking $booking, int $direction): void

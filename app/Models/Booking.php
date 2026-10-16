@@ -32,6 +32,8 @@ class Booking extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
+    public const STATUS_EXPIRED = 'expired';
+
     protected function casts(): array
     {
         return [
@@ -71,6 +73,15 @@ class Booking extends Model
         } while (static::where('reference', $reference)->exists());
 
         return $reference;
+    }
+
+    /**
+     * Pending and confirmed bookings keep their units out of the inventory;
+     * cancelled and expired ones have given them back.
+     */
+    public function holdsInventory(): bool
+    {
+        return in_array($this->status, [self::STATUS_PENDING, self::STATUS_CONFIRMED], true);
     }
 
     public function days(): int
