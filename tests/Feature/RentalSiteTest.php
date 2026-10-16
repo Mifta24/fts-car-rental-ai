@@ -26,13 +26,20 @@ class RentalSiteTest extends TestCase
             ->assertDontSee('Draft');
     }
 
-    public function test_opening_screen_lists_every_published_rental_when_there_are_several(): void
+    public function test_opening_screen_has_a_single_way_in_to_the_first_published_rental_when_there_are_several(): void
     {
         Rental::create(['name' => 'First Rental', 'slug' => 'first', 'public_status' => 'published']);
         Rental::create(['name' => 'Second Rental', 'slug' => 'second', 'public_status' => 'published']);
         Rental::create(['name' => 'Hidden Rental', 'slug' => 'hidden']);
 
-        $this->get('/')->assertOk()->assertSee('First Rental')->assertSee('Second Rental')->assertDontSee('Hidden Rental');
+        $this->get('/?lang=en')
+            ->assertOk()
+            ->assertSee('href="'.route('rental.show', ['rentalSlug' => 'first', 'lang' => 'en']).'"', false)
+            ->assertDontSee('rentalSlug=second')
+            ->assertDontSee('Hidden Rental');
+
+        // the other published rental stays reachable on its own address
+        $this->get('/second')->assertOk();
     }
 
     public function test_opening_screen_explains_when_no_rental_is_published(): void
@@ -429,7 +436,7 @@ class RentalSiteTest extends TestCase
             ->assertOk()
             ->assertSee('サウンドオン')
             ->assertSee('data-lang="ja-JP"', false)
-            ->assertSee('data-voice-preference="female"', false);
+            ->assertSee('data-voice-preference="male"', false);
     }
 
     public function test_a_vehicle_page_offers_booking_and_other_cars(): void
@@ -453,7 +460,7 @@ class RentalSiteTest extends TestCase
         $this->assertSame(1, substr_count($navigation, 'aria-current="page"'));
     }
 
-    public function test_pages_show_the_agent_line_without_a_mascot_figure(): void
+    public function test_pages_show_the_agent_line_with_the_agent_figure(): void
     {
         $rental = Rental::create(['name' => 'Demo', 'slug' => 'demo', 'public_status' => 'published', 'currency' => 'IDR']);
         $rental->vehicles()->create(['name' => 'City Car', 'slug' => 'city-car', 'base_price' => 950000, 'seats' => 2, 'is_active' => true]);
@@ -462,8 +469,8 @@ class RentalSiteTest extends TestCase
             $this->get($path)
                 ->assertOk()
                 ->assertSee('data-narrator', false)
-                ->assertDontSee('agent-figure', false)
-                ->assertDontSee('images/character/', false);
+                ->assertSee($path === '/demo' ? 'class="hero-figure"' : 'class="agent-figure"', false)
+                ->assertSee('images/character/', false);
         }
     }
 
