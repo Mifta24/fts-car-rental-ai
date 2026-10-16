@@ -572,6 +572,55 @@ function initAgent() {
         return el;
     }
 
+    const REPLY_POLL_MS = 1500;
+    const REPLY_WAIT_MS = 125000;
+
+    /**
+     * The agent answers off the web request: wait here until the conversation
+     * reports a finished reply, then show whatever the server added since.
+     */
+    async function receiveQueuedReply(customerToken) {
+        const deadline = Date.now() + REPLY_WAIT_MS;
+
+        while (Date.now() < deadline) {
+            await new Promise((resolve) => setTimeout(resolve, REPLY_POLL_MS));
+
+            let data;
+            try {
+                const response = await fetch(`${config.historyUrl}?customer_token=${encodeURIComponent(customerToken)}`, {
+                    headers: { Accept: 'application/json' },
+                });
+                if (response.status === 429) continue;
+                if (!response.ok) continue;
+                data = await response.json();
+            } catch {
+                continue; // transient network hiccup — keep waiting
+            }
+
+            if (data.reply_status === 'processing') continue;
+
+            if (data.reply_status === 'failed') {
+                const error = new Error('agent_unavailable');
+                error.status = 503;
+                throw error;
+            }
+
+            // The customer's own message is already on screen; show the rest.
+            data.messages.slice(knownMessageCount).filter((message) => message.role !== 'customer').forEach(renderMessage);
+            knownMessageCount = data.messages.length;
+
+            if (data.status === 'handed_over') {
+                showHandedOverBanner();
+            }
+
+            return;
+        }
+
+        const error = new Error('Request timed out');
+        error.status = 408;
+        throw error;
+    }
+
     async function sendMessage(text, { retry = false } = {}) {
         if (!text.trim() || handedOver || busy || !ready) return;
 
@@ -586,13 +635,19 @@ function initAgent() {
 
         try {
             const data = await api(config.messageUrl, { customer_token: customerToken, message: text, ...uiContext() });
-            renderMessage(data.message);
+
+            if (data.pending) {
+                await receiveQueuedReply(customerToken);
+            } else {
+                renderMessage(data.message);
+                knownMessageCount += 2; // the customer message just sent + the reply just rendered
+                if (data.status === 'handed_over') {
+                    showHandedOverBanner();
+                }
+            }
+
             setChatStatus(config.labels.statusSent, 'sent');
             window.rentalSound?.play('incoming');
-            knownMessageCount += 2; // the customer message just sent + the reply just rendered
-            if (data.status === 'handed_over') {
-                showHandedOverBanner();
-            }
         } catch (err) {
             messagesEl.appendChild(errorCard(text, err));
         } finally {
@@ -637,6 +692,11 @@ function initAgent() {
             }
             if (data.messages.some((message) => message.role === 'staff')) {
                 setChatStatus(config.labels.statusReplied, 'replied');
+            }
+
+            // The page was reloaded while the agent was still answering.
+            if (data.reply_status === 'processing') {
+                await receiveQueuedReply(customerToken).catch(() => {});
             }
         } catch {
             localStorage.removeItem(config.storageKey);

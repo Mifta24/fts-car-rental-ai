@@ -8,7 +8,6 @@ use App\Models\Rental;
 use App\Services\Agent\AgentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -61,15 +60,37 @@ class AgentChatController extends Controller
             ...array_key_exists('reservation', $data) ? ['reservation' => array_filter($data['reservation'] ?? [], fn ($value) => $value !== null && $value !== '')] : [],
         ]);
 
-        try {
-            $assistantMessage = $this->agent->reply($rental, $conversation, $data['message']);
-        } catch (\Throwable $e) {
-            Log::error('Agent reply failed', ['rental_id' => $rental->id, 'error' => $e->getMessage()]);
-
+        if ($conversation->currentReplyStatus() === Conversation::REPLY_PROCESSING) {
             return response()->json([
-                'error' => 'agent_unavailable',
-                'message' => 'The AI Rental Agent is temporarily unavailable. Please try again in a moment.',
-            ], 503);
+                'error' => 'reply_in_progress',
+                'message' => 'The AI Rental Agent is still answering your last message.',
+            ], 409);
+        }
+
+        $lastMessageId = (int) $conversation->messages()->reorder()->max('id');
+
+        $assistantMessage = $this->agent->submit($conversation, $data['message']);
+
+        if (! $assistantMessage) {
+            $conversation->refresh();
+
+            // The queue may already have finished (or failed) by the time we get here.
+            $assistantMessage = match ($conversation->currentReplyStatus()) {
+                Conversation::REPLY_PROCESSING => null,
+                Conversation::REPLY_FAILED => false,
+                default => $conversation->messages()->where('id', '>', $lastMessageId)->where('role', ConversationMessage::ROLE_ASSISTANT)->first() ?? false,
+            };
+
+            if ($assistantMessage === null) {
+                return response()->json(['pending' => true, 'status' => $conversation->status], 202);
+            }
+
+            if ($assistantMessage === false) {
+                return response()->json([
+                    'error' => 'agent_unavailable',
+                    'message' => 'The AI Rental Agent is temporarily unavailable. Please try again in a moment.',
+                ], 503);
+            }
         }
 
         return response()->json([
@@ -96,6 +117,7 @@ class AgentChatController extends Controller
         return response()->json([
             'messages' => $messages,
             'status' => $conversation->status,
+            'reply_status' => $conversation->currentReplyStatus() ?? 'idle',
         ]);
     }
 

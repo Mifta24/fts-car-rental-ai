@@ -27,7 +27,7 @@ Satu aplikasi bisa melayani beberapa perusahaan rental. Setiap rental punya hala
 
 Kode ada di [app/Services/Agent/](app/Services/Agent).
 
-- **[AgentService](app/Services/Agent/AgentService.php)** menjalankan satu giliran percakapan. Ia memanggil endpoint chat yang kompatibel dengan OpenAI (LM Studio atau Ollama yang di-host sendiri) dan menjalankan loop tool-calling (maksimal 6 putaran per giliran). Riwayat percakapan disimpan di database. Request dikirim dengan `reasoning_effort=none` agar model tidak melakukan fase berpikir panjang. Seluruh giliran dibatasi 85 detik supaya muat dalam batas 100 detik Cloudflare.
+- **[AgentService](app/Services/Agent/AgentService.php)** menjalankan satu giliran percakapan. Ia memanggil endpoint chat yang kompatibel dengan OpenAI (LM Studio atau Ollama yang di-host sendiri) dan menjalankan loop tool-calling (maksimal 6 putaran per giliran). Riwayat percakapan disimpan di database. Request dikirim dengan `reasoning_effort=none` agar model tidak melakukan fase berpikir panjang. Seluruh giliran dibatasi 85 detik dan berjalan di queue, jadi model yang lambat tidak menahan worker web.
 - **[RentalAgentTools](app/Services/Agent/RentalAgentTools.php)** berisi alat yang bisa dipanggil model. Semua fakta rental, mobil, harga, dan ketersediaan harus lewat sini, karena model sendiri tidak dipercaya menyimpan data apa pun.
 
   | Tool | Fungsi |
@@ -182,7 +182,8 @@ vendor/bin/pint --dirty
 - Seeder demo tidak jalan di produksi. Buat akun owner dan rental Anda sendiri.
 - Pastikan server aplikasi bisa menjangkau `LOCAL_LLM_BASE_URL`. Pada setup saat ini endpoint LLM diakses lewat Tailscale.
 - Jalankan scheduler Laravel (`php artisan schedule:work`, atau cron `* * * * * php artisan schedule:run`). Ia menjalankan `bookings:expire-pending` setiap jam (permintaan `pending` yang tidak dijawab 48 jam menjadi `expired` dan mobilnya kembali ke inventori) dan `conversations:prune` setiap hari (percakapan tanpa aktivitas lebih dari 90 hari dihapus, kecuali yang handover-nya masih terbuka; booking tetap disimpan).
-- Karena ada batas 100 detik dari Cloudflare, jangan menaikkan batas waktu respons agen melebihi 85 detik.
+- Balasan agen dibuat oleh job `GenerateAgentReply` di queue, bukan di request web: request pesan langsung kembali dengan `202`, lalu halaman memeriksa `history` sampai balasan siap. Jadi **harus ada worker yang berjalan** (`php artisan queue:work --timeout=95`; saat development sudah ikut `composer dev`). Tanpa worker, pelanggan menunggu lalu melihat pesan gagal setelah sekitar 2 menit.
+- Batas waktu satu giliran agen tetap 85 detik (`REPLY_BUDGET_SECONDS`); jangan menaikkannya melebihi timeout job (95 detik) dan `DB_QUEUE_RETRY_AFTER` (120 detik).
 
 ## Lisensi
 

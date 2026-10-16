@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'customer_email',
     'locale',
     'status',
+    'reply_status',
+    'reply_started_at',
     'handover_summary',
     'current_scene',
     'selected_vehicle_id',
@@ -30,6 +32,15 @@ class Conversation extends Model
 
     public const STATUS_CLOSED = 'closed';
 
+    public const REPLY_PROCESSING = 'processing';
+
+    public const REPLY_FAILED = 'failed';
+
+    /**
+     * A reply still "processing" after this long was lost with its worker.
+     */
+    private const REPLY_STALE_AFTER_SECONDS = 120;
+
     /**
      * The UI scenes the customer can be in while talking to the agent.
      */
@@ -39,6 +50,7 @@ class Conversation extends Model
     {
         return [
             'last_message_at' => 'datetime',
+            'reply_started_at' => 'datetime',
             'reservation_state' => 'array',
         ];
     }
@@ -71,6 +83,20 @@ class Conversation extends Model
     public function handoverRequest(): HasOne
     {
         return $this->hasOne(HandoverRequest::class)->latestOfMany();
+    }
+
+    /**
+     * Whether the agent is working on a reply: 'processing', 'failed' (the last
+     * turn got no answer and can be retried) or null when idle. A reply whose
+     * worker vanished counts as failed instead of keeping the customer waiting.
+     */
+    public function currentReplyStatus(): ?string
+    {
+        if ($this->reply_status === self::REPLY_PROCESSING && $this->reply_started_at?->lt(now()->subSeconds(self::REPLY_STALE_AFTER_SECONDS))) {
+            return self::REPLY_FAILED;
+        }
+
+        return $this->reply_status;
     }
 
     public function isHandedOver(): bool

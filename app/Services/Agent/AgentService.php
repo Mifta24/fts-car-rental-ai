@@ -2,10 +2,12 @@
 
 namespace App\Services\Agent;
 
+use App\Jobs\GenerateAgentReply;
 use App\Models\Conversation;
 use App\Models\ConversationMessage;
 use App\Models\Rental;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -92,13 +94,79 @@ class AgentService
         }
     }
 
+    /**
+     * Answers one customer message right now, waiting for the model. Used where
+     * there is no page to poll, such as the terminal chat.
+     */
     public function reply(Rental $rental, Conversation $conversation, string $customerMessage): ConversationMessage
     {
-        $customerRecord = $conversation->messages()->create([
+        $customerRecord = $this->recordCustomerMessage($conversation, $customerMessage);
+
+        return $this->instantReply($conversation, $customerRecord) ?? $this->respond($rental, $conversation, $customerRecord);
+    }
+
+    /**
+     * Takes one customer message from the web. Replies that need no model (the
+     * conversation is with staff, or the guard refuses) are returned at once;
+     * otherwise the reply is queued and null is returned.
+     */
+    public function submit(Conversation $conversation, string $customerMessage): ?ConversationMessage
+    {
+        $customerRecord = $this->recordCustomerMessage($conversation, $customerMessage);
+
+        $instant = $this->instantReply($conversation, $customerRecord);
+
+        if ($instant) {
+            return $instant;
+        }
+
+        $conversation->update(['reply_status' => Conversation::REPLY_PROCESSING, 'reply_started_at' => now()]);
+
+        GenerateAgentReply::dispatch($conversation->id, $customerRecord->id);
+
+        return null;
+    }
+
+    /**
+     * Runs a queued turn to the end and records how it went for the page to read.
+     */
+    public function generateQueuedReply(Conversation $conversation, ConversationMessage $customerRecord): void
+    {
+        try {
+            $this->respond($conversation->rental, $conversation, $customerRecord);
+        } catch (\Throwable $e) {
+            Log::error('Agent reply failed', ['rental_id' => $conversation->rental_id, 'error' => $e->getMessage()]);
+            $this->markReplyFailed($conversation, $customerRecord->id);
+
+            return;
+        }
+
+        $conversation->update(['reply_status' => null, 'reply_started_at' => null]);
+    }
+
+    /**
+     * The customer keeps the text on screen and can retry; leaving it stored would duplicate it.
+     */
+    public function markReplyFailed(Conversation $conversation, int $customerMessageId): void
+    {
+        ConversationMessage::whereKey($customerMessageId)->delete();
+
+        $conversation->update(['reply_status' => Conversation::REPLY_FAILED]);
+    }
+
+    private function recordCustomerMessage(Conversation $conversation, string $customerMessage): ConversationMessage
+    {
+        return $conversation->messages()->create([
             'role' => ConversationMessage::ROLE_CUSTOMER,
             'content' => $customerMessage,
         ]);
+    }
 
+    /**
+     * The reply that needs no model, if there is one for this message.
+     */
+    private function instantReply(Conversation $conversation, ConversationMessage $customerRecord): ?ConversationMessage
+    {
         if ($conversation->isHandedOver()) {
             return $conversation->messages()->create([
                 'role' => ConversationMessage::ROLE_SYSTEM,
@@ -106,14 +174,18 @@ class AgentService
             ]);
         }
 
-        if ($this->contentGuard->isOffensive($customerMessage)) {
-            return $this->refuse($conversation, $customerMessage);
+        if ($this->contentGuard->isOffensive($customerRecord->content)) {
+            return $this->refuse($conversation, $customerRecord->content);
         }
 
+        return null;
+    }
+
+    private function respond(Rental $rental, Conversation $conversation, ConversationMessage $customerRecord): ConversationMessage
+    {
         try {
             return $this->answer($rental, $conversation);
         } catch (\Throwable $e) {
-            // The customer keeps the text on screen and can retry; leaving it here would duplicate it.
             $customerRecord->delete();
 
             throw $e;

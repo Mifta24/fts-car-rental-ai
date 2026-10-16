@@ -42,7 +42,7 @@ class AppServiceProvider extends ServiceProvider
         // allowance is per conversation; the address limit is a roomy backstop for
         // many customers behind one connection (a hotel, an office).
         RateLimiter::for('agent-history', fn (Request $request) => [
-            Limit::perMinute(30)->by('history:'.($request->input('customer_token') ?: $request->ip())),
+            Limit::perMinute(60)->by('history:'.($request->input('customer_token') ?: $request->ip())),
             Limit::perMinute(600)->by('history-ip:'.$request->ip()),
         ]);
     }
