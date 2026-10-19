@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Concerns\ResolvesCurrentRental;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Services\Reservation\BookingNotifier;
 use App\Services\Reservation\ReservationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ class BookingController extends Controller
 {
     use ResolvesCurrentRental;
 
-    public function __construct(private readonly ReservationService $reservations) {}
+    public function __construct(private readonly ReservationService $reservations, private readonly BookingNotifier $notifier) {}
 
     public function index(Request $request): View
     {
@@ -56,6 +57,7 @@ class BookingController extends Controller
         }
 
         $booking->update(['status' => $data['status']]);
+        $this->notifier->statusChanged($booking);
 
         return back()->with('status', __('admin.booking_updated', ['reference' => $booking->reference, 'status' => __('admin.booking_statuses.'.$data['status'])]));
     }

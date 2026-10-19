@@ -84,6 +84,39 @@ class Booking extends Model
         return in_array($this->status, [self::STATUS_PENDING, self::STATUS_CONFIRMED], true);
     }
 
+    /**
+     * Whether the email or phone number given matches the one left at booking
+     * time. Phone numbers compare by digits only, so spacing and "+" do not matter.
+     */
+    public function contactMatches(string $contact): bool
+    {
+        $contact = trim($contact);
+
+        if ($contact === '') {
+            return false;
+        }
+
+        if (filled($this->customer_email) && mb_strtolower($contact) === mb_strtolower($this->customer_email)) {
+            return true;
+        }
+
+        $digits = preg_replace('/\D+/', '', $contact);
+
+        return strlen($digits) >= 6
+            && filled($this->customer_phone)
+            && $digits === preg_replace('/\D+/', '', $this->customer_phone);
+    }
+
+    /**
+     * Whether the customer may still cancel online: the request is still alive
+     * and the trip has not started.
+     */
+    public function cancellableByCustomer(): bool
+    {
+        return $this->holdsInventory()
+            && $this->pickup_date->toDateString() >= now($this->rental->timezone)->toDateString();
+    }
+
     public function days(): int
     {
         return $this->pickup_date->diffInDays($this->return_date);

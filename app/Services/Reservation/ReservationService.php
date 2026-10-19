@@ -25,6 +25,8 @@ class ReservationService
      */
     public const PENDING_HOLD_HOURS = 48;
 
+    public function __construct(private readonly BookingNotifier $notifier = new BookingNotifier) {}
+
     /**
      * Whether the requested party fits the vehicle across the requested units.
      */
@@ -109,7 +111,7 @@ class ReservationService
         $units = $data['units'] ?? 1;
         $withDriver = (bool) ($data['with_driver'] ?? false);
 
-        return DB::transaction(function () use ($rental, $vehicle, $data, $conversation, $units, $withDriver) {
+        $booking = DB::transaction(function () use ($rental, $vehicle, $data, $conversation, $units, $withDriver) {
             $quote = $this->quote($vehicle, $data['pickup_date'], $data['return_date'], $units, $withDriver, lockForUpdate: true);
 
             if (! $quote) {
@@ -139,6 +141,12 @@ class ReservationService
 
             return $booking;
         });
+
+        if ($booking) {
+            $this->notifier->requested($booking);
+        }
+
+        return $booking;
     }
 
     /**
@@ -182,11 +190,12 @@ class ReservationService
     public function expirePending(): int
     {
         $expired = 0;
+        $expiredBookings = [];
 
         Booking::where('status', Booking::STATUS_PENDING)
             ->where('created_at', '<=', now()->subHours(self::PENDING_HOLD_HOURS))
-            ->each(function (Booking $booking) use (&$expired) {
-                DB::transaction(function () use ($booking, &$expired) {
+            ->each(function (Booking $booking) use (&$expired, &$expiredBookings) {
+                DB::transaction(function () use ($booking, &$expired, &$expiredBookings) {
                     $locked = Booking::whereKey($booking->id)->lockForUpdate()->first();
 
                     if ($locked?->status !== Booking::STATUS_PENDING) {
@@ -196,8 +205,13 @@ class ReservationService
                     $this->releaseInventory($locked);
                     $locked->update(['status' => Booking::STATUS_EXPIRED]);
                     $expired++;
+                    $expiredBookings[] = $locked;
                 });
             });
+
+        foreach ($expiredBookings as $booking) {
+            $this->notifier->statusChanged($booking);
+        }
 
         return $expired;
     }

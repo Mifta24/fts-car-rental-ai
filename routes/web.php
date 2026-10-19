@@ -6,8 +6,10 @@ use App\Http\Controllers\Admin\HandoverController;
 use App\Http\Controllers\Admin\KnowledgeItemController;
 use App\Http\Controllers\Admin\RentalSwitchController;
 use App\Http\Controllers\Admin\VehicleController;
+use App\Http\Controllers\Admin\VehicleInventoryController;
 use App\Http\Controllers\AgentChatController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\BookingLookupController;
 use App\Http\Controllers\RentalPageController;
 use App\Http\Controllers\ReservationController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +27,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         Route::post('rental', RentalSwitchController::class)->name('rental.switch');
 
+        Route::get('vehicles/{vehicle}/inventory', [VehicleInventoryController::class, 'index'])->name('vehicles.inventory');
+        Route::put('vehicles/{vehicle}/inventory', [VehicleInventoryController::class, 'update'])->name('vehicles.inventory.update');
         Route::resource('vehicles', VehicleController::class)->except('show');
         Route::resource('knowledge-items', KnowledgeItemController::class)->except('show');
 
@@ -47,6 +51,12 @@ Route::prefix('{rentalSlug}')->group(function () {
     Route::get('info', [RentalPageController::class, 'info'])->name('rental.info');
     Route::get('staff', [RentalPageController::class, 'staff'])->name('rental.staff');
     Route::get('reservation', [RentalPageController::class, 'reservationScene'])->name('rental.reservation');
+    Route::get('booking', [RentalPageController::class, 'booking'])->name('rental.booking');
+
+    Route::prefix('booking')->name('booking.')->middleware('throttle:10,1')->group(function () {
+        Route::post('lookup', [BookingLookupController::class, 'lookup'])->name('lookup');
+        Route::post('cancel', [BookingLookupController::class, 'cancel'])->name('cancel');
+    });
 
     Route::prefix('reservation')->name('reservation.')->middleware('throttle:20,1')->group(function () {
         Route::post('quote', [ReservationController::class, 'quote'])->name('quote');
