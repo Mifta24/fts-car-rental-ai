@@ -13,5 +13,8 @@ return [
     'vehicle_updated' => '車両「:name」を更新しました。',
     'vehicle_deleted' => '車両を削除しました。',
     'handover_replied' => 'お客様に返信を送信しました。',
+    'llm_down' => 'AIレンタルエージェントが :time にお客様へ回答できず、その後も復旧していません。言語モデルのサーバーを確認してください。その間、お客様にはスタッフへの連絡をご案内しています。',
+    'inventory_saved' => ':count 日分の在庫を保存しました。',
+    'inventory_range_too_long' => '日付の範囲は :days 日以内にしてください。',
     'handover_resolved' => 'ハンドオーバーを完了しました。AIレンタルエージェントが会話に戻ります。',
 ];

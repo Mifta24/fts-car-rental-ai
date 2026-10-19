@@ -13,5 +13,8 @@ return [
     'vehicle_updated' => 'Vehicle ":name" updated.',
     'vehicle_deleted' => 'Vehicle deleted.',
     'handover_replied' => 'Reply sent to the customer.',
+    'llm_down' => 'The AI Rental Agent could not answer a customer :time and has not recovered since. Check the language model server; customers are being offered staff contact meanwhile.',
+    'inventory_saved' => 'Inventory saved for :count day(s).',
+    'inventory_range_too_long' => 'The date range cannot be longer than :days days.',
     'handover_resolved' => 'Handover resolved — the AI Rental Agent is back in the conversation.',
 ];

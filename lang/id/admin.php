@@ -13,5 +13,8 @@ return [
     'vehicle_updated' => 'Kendaraan ":name" diperbarui.',
     'vehicle_deleted' => 'Kendaraan dihapus.',
     'handover_replied' => 'Balasan terkirim ke pelanggan.',
+    'llm_down' => 'AI Rental Agent gagal menjawab pelanggan :time dan belum pulih sejak itu. Periksa server model bahasa; sementara itu pelanggan diarahkan menghubungi staf.',
+    'inventory_saved' => 'Inventori disimpan untuk :count hari.',
+    'inventory_range_too_long' => 'Rentang tanggal tidak boleh lebih dari :days hari.',
     'handover_resolved' => 'Handover selesai — AI Rental Agent kembali menangani percakapan.',
 ];
