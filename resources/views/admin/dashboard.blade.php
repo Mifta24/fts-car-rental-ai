@@ -1,4 +1,10 @@
 <x-admin-layout title="Dashboard">
+    @if ($modelFailure)
+        <div class="mb-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
+            {{ __('admin.llm_down', ['time' => $modelFailure->diffForHumans()]) }}
+        </div>
+    @endif
+
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div class="rounded-xl border border-slate-200 bg-white p-4">
             <p class="text-2xl font-semibold text-slate-900">{{ $stats['vehicles'] }}</p>

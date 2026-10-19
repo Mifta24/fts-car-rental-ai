@@ -106,6 +106,24 @@ class RentalPageController extends Controller
         return view('rental.staff-index', $this->stageData($rental, $locale, 'staff'));
     }
 
+    public function booking(Request $request, string $rentalSlug): View
+    {
+        [$rental, $locale] = $this->resolveStage($request, $rentalSlug);
+
+        $lookup = session('booking_lookup');
+        $booking = $lookup
+            ? $rental->bookings()->where('reference', strtoupper(trim($lookup['reference'])))->with('vehicle')->first()
+            : null;
+
+        return view('rental.booking-lookup', [
+            ...$this->stageData($rental, $locale, 'staff'),
+            'lookup' => $lookup,
+            'booking' => $booking?->contactMatches($lookup['contact']) ? $booking : null,
+            'lines' => trans('booking', [], $locale),
+            'canCancel' => $booking?->contactMatches($lookup['contact']) && $booking->cancellableByCustomer(),
+        ]);
+    }
+
     public function reservationScene(Request $request, string $rentalSlug): View
     {
         [$rental, $locale] = $this->resolveStage($request, $rentalSlug);

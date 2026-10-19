@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\ResolvesCurrentRental;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\HandoverRequest;
+use App\Services\Agent\AgentService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -40,6 +41,7 @@ class DashboardController extends Controller
             'stats' => $stats,
             'recentBookings' => $recentBookings,
             'openHandovers' => $openHandovers,
+            'modelFailure' => AgentService::lastModelFailure(),
         ]);
     }
 }

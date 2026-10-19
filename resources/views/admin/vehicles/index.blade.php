@@ -30,7 +30,8 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <a href="{{ route('admin.vehicles.edit', $vehicle) }}" class="text-slate-600 hover:underline">Edit</a>
+                            <a href="{{ route('admin.vehicles.inventory', $vehicle) }}" class="text-slate-600 hover:underline">Availability</a>
+                            <a href="{{ route('admin.vehicles.edit', $vehicle) }}" class="ml-3 text-slate-600 hover:underline">Edit</a>
                             <form method="POST" action="{{ route('admin.vehicles.destroy', $vehicle) }}" class="inline" onsubmit="return confirm('Delete this vehicle?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="ml-3 text-red-600 hover:underline">Delete</button>

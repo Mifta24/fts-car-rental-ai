@@ -31,6 +31,7 @@
                 @if ($staffLinks['email_url'])
                     <li><a href="{{ $staffLinks['email_url'] }}" class="contact-card" style="--i: 3"><span class="contact-card-icon"><x-info-icon name="about" /></span><span class="contact-card-text"><strong>{{ $wizard['email_rental'] }}</strong><small>{{ $rental->email }}</small></span><span aria-hidden="true">›</span></a></li>
                 @endif
+                <li><a href="{{ route('rental.booking', ['rentalSlug' => $rental->slug, 'lang' => $locale]) }}" class="contact-card" style="--i: 4"><span class="contact-card-icon"><x-info-icon name="about" /></span><span class="contact-card-text"><strong>{{ trans('booking.title', [], $locale) }}</strong><small>{{ trans('booking.lead', [], $locale) }}</small></span><span aria-hidden="true">›</span></a></li>
             </ul>
 
             <div class="visit-strip">
