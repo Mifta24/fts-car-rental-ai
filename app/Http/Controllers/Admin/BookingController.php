@@ -52,11 +52,11 @@ class BookingController extends Controller
                 $this->reservations->releaseInventory($booking);
             }
         } elseif (! $booking->holdsInventory() && ! $this->reservations->holdInventory($booking)) {
-            return back()->with('error', "Booking {$booking->reference} cannot be confirmed: the car is no longer available for those dates.");
+            return back()->with('error', __('admin.booking_unavailable', ['reference' => $booking->reference]));
         }
 
         $booking->update(['status' => $data['status']]);
 
-        return back()->with('status', "Booking {$booking->reference} marked as {$data['status']}.");
+        return back()->with('status', __('admin.booking_updated', ['reference' => $booking->reference, 'status' => __('admin.booking_statuses.'.$data['status'])]));
     }
 }

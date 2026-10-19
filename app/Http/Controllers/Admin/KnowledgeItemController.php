@@ -39,7 +39,7 @@ class KnowledgeItemController extends Controller
 
         $item = $rental->knowledgeItems()->create($this->validated($request));
 
-        return redirect()->route('admin.knowledge-items.index')->with('status', "Knowledge item \"{$item->title}\" created.");
+        return redirect()->route('admin.knowledge-items.index')->with('status', __('admin.knowledge_created', ['title' => $item->title]));
     }
 
     public function edit(Request $request, RentalKnowledgeItem $knowledgeItem): View
@@ -61,7 +61,7 @@ class KnowledgeItemController extends Controller
 
         $knowledgeItem->update($this->validated($request));
 
-        return redirect()->route('admin.knowledge-items.index')->with('status', "Knowledge item \"{$knowledgeItem->title}\" updated.");
+        return redirect()->route('admin.knowledge-items.index')->with('status', __('admin.knowledge_updated', ['title' => $knowledgeItem->title]));
     }
 
     public function destroy(Request $request, RentalKnowledgeItem $knowledgeItem): RedirectResponse
@@ -71,7 +71,7 @@ class KnowledgeItemController extends Controller
 
         $knowledgeItem->delete();
 
-        return redirect()->route('admin.knowledge-items.index')->with('status', 'Knowledge item deleted.');
+        return redirect()->route('admin.knowledge-items.index')->with('status', __('admin.knowledge_deleted'));
     }
 
     private function validated(Request $request): array

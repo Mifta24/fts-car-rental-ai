@@ -41,7 +41,7 @@ class VehicleController extends Controller
         $vehicle = $rental->vehicles()->create($data);
         $this->syncImages($vehicle, $request);
 
-        return redirect()->route('admin.vehicles.index')->with('status', "Vehicle \"{$vehicle->name}\" created.");
+        return redirect()->route('admin.vehicles.index')->with('status', __('admin.vehicle_created', ['name' => $vehicle->name]));
     }
 
     public function edit(Request $request, Vehicle $vehicle): View
@@ -62,7 +62,7 @@ class VehicleController extends Controller
         $vehicle->update($this->validated($request, $vehicle));
         $this->syncImages($vehicle, $request);
 
-        return redirect()->route('admin.vehicles.index')->with('status', "Vehicle \"{$vehicle->name}\" updated.");
+        return redirect()->route('admin.vehicles.index')->with('status', __('admin.vehicle_updated', ['name' => $vehicle->name]));
     }
 
     public function destroy(Request $request, Vehicle $vehicle): RedirectResponse
@@ -72,7 +72,7 @@ class VehicleController extends Controller
 
         $vehicle->delete();
 
-        return redirect()->route('admin.vehicles.index')->with('status', 'Vehicle deleted.');
+        return redirect()->route('admin.vehicles.index')->with('status', __('admin.vehicle_deleted'));
     }
 
     private function validated(Request $request, ?Vehicle $vehicle = null): array
