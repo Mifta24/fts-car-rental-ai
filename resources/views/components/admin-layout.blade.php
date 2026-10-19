@@ -19,6 +19,17 @@
                     <p class="text-xs text-slate-500">Admin Dashboard</p>
                 </div>
             </div>
+            @if (auth()->user()?->activeRentals()->count() > 1)
+                <form method="POST" action="{{ route('admin.rental.switch') }}" class="border-b border-slate-200 px-3 py-3">
+                    @csrf
+                    <label for="rental-switch" class="mb-1 block text-xs text-slate-500">Rental</label>
+                    <select id="rental-switch" name="rental_id" onchange="this.form.submit()" class="w-full rounded-md border border-slate-300 px-2 py-1 text-sm">
+                        @foreach (auth()->user()->activeRentals() as $switchable)
+                            <option value="{{ $switchable->id }}" @selected($switchable->id === auth()->user()->currentRental()?->id)>{{ $switchable->name }}</option>
+                        @endforeach
+                    </select>
+                </form>
+            @endif
             <nav class="space-y-1 px-3 py-4 text-sm">
                 @php
                     $navItems = [
