@@ -51,7 +51,7 @@ class AgentChatController extends Controller
             'reservation.vehicle_slug' => ['nullable', 'string', 'max:120'],
         ]);
 
-        $conversation = $this->findConversation($rental, $data['customer_token']);
+        $conversation = $this->findConversation($request, $rental, $data['customer_token']);
 
         $this->agent->rememberContext($rental, $conversation, [
             'scene' => $data['scene'] ?? null,
@@ -63,7 +63,7 @@ class AgentChatController extends Controller
         if ($conversation->currentReplyStatus() === Conversation::REPLY_PROCESSING) {
             return response()->json([
                 'error' => 'reply_in_progress',
-                'message' => 'The AI Rental Agent is still answering your last message.',
+                'message' => trans('agent.reply_in_progress', [], $conversation->locale),
             ], 409);
         }
 
@@ -88,7 +88,7 @@ class AgentChatController extends Controller
             if ($assistantMessage === false) {
                 return response()->json([
                     'error' => 'agent_unavailable',
-                    'message' => 'The AI Rental Agent is temporarily unavailable. Please try again in a moment.',
+                    'message' => trans('agent.unavailable', [], $conversation->locale),
                 ], 503);
             }
         }
@@ -105,7 +105,7 @@ class AgentChatController extends Controller
 
         $data = $request->validate(['customer_token' => ['required', 'uuid']]);
 
-        $conversation = $this->findConversation($rental, $data['customer_token']);
+        $conversation = $this->findConversation($request, $rental, $data['customer_token']);
 
         $messages = $conversation->messages()
             ->whereIn('role', [ConversationMessage::ROLE_CUSTOMER, ConversationMessage::ROLE_ASSISTANT, ConversationMessage::ROLE_SYSTEM])
@@ -130,7 +130,7 @@ class AgentChatController extends Controller
         return $rental;
     }
 
-    private function findConversation(Rental $rental, string $customerToken): Conversation
+    private function findConversation(Request $request, Rental $rental, string $customerToken): Conversation
     {
         $conversation = Conversation::where('rental_id', $rental->id)
             ->where('customer_token', $customerToken)
@@ -138,7 +138,7 @@ class AgentChatController extends Controller
 
         if (! $conversation) {
             throw ValidationException::withMessages([
-                'customer_token' => 'This conversation no longer exists. Please start a new one.',
+                'customer_token' => trans('agent.conversation_missing', [], $request->input('locale', $rental->default_locale)),
             ]);
         }
 

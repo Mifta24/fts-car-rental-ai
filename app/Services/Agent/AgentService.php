@@ -36,7 +36,17 @@ class AgentService
      */
     private const REPLY_BUDGET_SECONDS = 85;
 
-    private const UNBACKED_DATA_PATTERN = '/(?:rp\.?|idr|usd|jpy|¥|\$)\s?\d|\d[\d.,]*\s?(?:rb|ribu|juta|jt)\b|\[[^\]]+\]/iu';
+    /**
+     * How many of the latest messages go to the model, so a long chat does not
+     * grow the prompt (and the latency) without bound.
+     */
+    private const MAX_HISTORY_MESSAGES = 30;
+
+    /**
+     * A money amount (Rp 500.000, 500 rb, $50, ¥8000) or a made-up UI placeholder
+     * such as "[Vehicle card]" — both mean the reply showed data no tool returned.
+     */
+    private const UNBACKED_DATA_PATTERN = '/(?<![\p{L}\p{N}])(?:rp\.?|idr|usd|jpy)\s?\d|[¥$]\s?\d|(?<![\p{L}\p{N}])\d[\d.,]*\s?(?:rb|ribu|juta|jt)(?![\p{L}\p{N}])|\[[^\]]*(?:card|kartu|vehicle|kendaraan|mobil|car|image|gambar|foto|photo|price|harga)[^\]]*\]/iu';
 
     public function __construct(
         private readonly ContentGuard $contentGuard,
@@ -170,7 +180,7 @@ class AgentService
         if ($conversation->isHandedOver()) {
             return $conversation->messages()->create([
                 'role' => ConversationMessage::ROLE_SYSTEM,
-                'content' => 'This conversation is with rental staff now. A team member will respond shortly.',
+                'content' => trans('agent.handed_over', [], $conversation->locale),
             ]);
         }
 
@@ -334,9 +344,13 @@ class AgentService
     private function buildHistory(Conversation $conversation): array
     {
         return $conversation->messages()
+            ->reorder()
             ->whereIn('role', [ConversationMessage::ROLE_CUSTOMER, ConversationMessage::ROLE_ASSISTANT])
-            ->orderBy('created_at')
+            ->latest('id')
+            ->limit(self::MAX_HISTORY_MESSAGES)
             ->get()
+            ->reverse()
+            ->skipWhile(fn (ConversationMessage $message) => $message->role !== ConversationMessage::ROLE_CUSTOMER)
             ->map(fn (ConversationMessage $message) => [
                 'role' => $message->role === ConversationMessage::ROLE_CUSTOMER ? 'user' : 'assistant',
                 'content' => (string) $message->content,
