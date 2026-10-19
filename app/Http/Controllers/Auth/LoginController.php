@@ -23,7 +23,7 @@ class LoginController extends Controller
         ]);
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()->withErrors(['email' => 'Invalid credentials.'])->onlyInput('email');
+            return back()->withErrors(['email' => __('admin.invalid_credentials')])->onlyInput('email');
         }
 
         $request->session()->regenerate();

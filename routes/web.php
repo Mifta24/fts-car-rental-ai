@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\HandoverController;
 use App\Http\Controllers\Admin\KnowledgeItemController;
+use App\Http\Controllers\Admin\RentalSwitchController;
 use App\Http\Controllers\Admin\VehicleController;
 use App\Http\Controllers\AgentChatController;
 use App\Http\Controllers\Auth\LoginController;
@@ -22,6 +23,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::post('rental', RentalSwitchController::class)->name('rental.switch');
 
         Route::resource('vehicles', VehicleController::class)->except('show');
         Route::resource('knowledge-items', KnowledgeItemController::class)->except('show');
