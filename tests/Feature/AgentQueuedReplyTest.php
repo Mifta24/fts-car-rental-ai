@@ -6,6 +6,7 @@ use App\Jobs\GenerateAgentReply;
 use App\Models\Conversation;
 use App\Models\ConversationMessage;
 use App\Models\Rental;
+use App\Models\User;
 use App\Services\Agent\AgentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -102,6 +103,29 @@ class AgentQueuedReplyTest extends TestCase
 
         $this->send()->assertStatus(202);
         $this->history()->assertJsonPath('reply_status', 'processing');
+    }
+
+    public function test_a_failing_model_raises_an_admin_warning_until_a_reply_succeeds(): void
+    {
+        $staff = User::factory()->create();
+        Rental::firstOrFail()->users()->attach($staff->id, ['role' => 'staff', 'status' => 'active']);
+
+        $this->actingAs($staff)->get(route('admin.dashboard'))->assertDontSee('could not answer a customer');
+
+        Http::fake(['llm.test/*' => Http::sequence()
+            ->push('boom', 500)
+            ->push(['choices' => [['message' => ['content' => 'Hi there'], 'finish_reason' => 'stop']]]),
+        ]);
+
+        $this->send()->assertStatus(202);
+        $this->runQueuedJob();
+
+        $this->get(route('admin.dashboard'))->assertSee('could not answer a customer');
+
+        $this->send()->assertStatus(202);
+        $this->runQueuedJob();
+
+        $this->get(route('admin.dashboard'))->assertDontSee('could not answer a customer');
     }
 
     public function test_a_reply_lost_with_its_worker_stops_counting_as_processing(): void

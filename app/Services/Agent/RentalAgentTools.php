@@ -7,6 +7,7 @@ use App\Models\HandoverRequest;
 use App\Models\Rental;
 use App\Models\RentalKnowledgeItem;
 use App\Models\Vehicle;
+use App\Services\Reservation\BookingNotifier;
 use App\Services\Reservation\ReservationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
@@ -23,6 +24,7 @@ class RentalAgentTools
         private readonly Conversation $conversation,
         private readonly string $locale,
         private readonly ReservationService $reservations = new ReservationService,
+        private readonly BookingNotifier $notifier = new BookingNotifier,
     ) {}
 
     /**
@@ -401,7 +403,7 @@ class RentalAgentTools
         $reason = $input['reason'];
         $summary = $input['summary'];
 
-        HandoverRequest::create([
+        $handover = HandoverRequest::create([
             'conversation_id' => $this->conversation->id,
             'reason' => $reason,
             'summary' => $summary,
@@ -412,6 +414,8 @@ class RentalAgentTools
             'status' => Conversation::STATUS_HANDED_OVER,
             'handover_summary' => $summary,
         ]);
+
+        $this->notifier->handoverRequested($handover);
 
         return [
             'text' => json_encode([

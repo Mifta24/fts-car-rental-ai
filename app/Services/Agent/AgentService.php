@@ -6,6 +6,8 @@ use App\Jobs\GenerateAgentReply;
 use App\Models\Conversation;
 use App\Models\ConversationMessage;
 use App\Models\Rental;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -25,6 +27,13 @@ use RuntimeException;
 class AgentService
 {
     private const MAX_TOOL_ITERATIONS = 6;
+
+    private const LLM_FAILURE_CACHE_KEY = 'agent.llm_failed_at';
+
+    /**
+     * How long a failed reply keeps the admin warning up if nothing succeeds in between.
+     */
+    private const LLM_FAILURE_MEMORY_MINUTES = 30;
 
     private const MAX_TOKENS = 4096;
 
@@ -151,7 +160,19 @@ class AgentService
             return;
         }
 
+        Cache::forget(self::LLM_FAILURE_CACHE_KEY);
         $conversation->update(['reply_status' => null, 'reply_started_at' => null]);
+    }
+
+    /**
+     * When the model last failed to answer a customer without a good answer since,
+     * or null. Lets the admin dashboard warn staff before customers complain.
+     */
+    public static function lastModelFailure(): ?Carbon
+    {
+        $failedAt = Cache::get(self::LLM_FAILURE_CACHE_KEY);
+
+        return $failedAt ? Carbon::parse($failedAt) : null;
     }
 
     /**
@@ -160,6 +181,8 @@ class AgentService
     public function markReplyFailed(Conversation $conversation, int $customerMessageId): void
     {
         ConversationMessage::whereKey($customerMessageId)->delete();
+
+        Cache::put(self::LLM_FAILURE_CACHE_KEY, now()->toIso8601String(), now()->addMinutes(self::LLM_FAILURE_MEMORY_MINUTES));
 
         $conversation->update(['reply_status' => Conversation::REPLY_FAILED]);
     }
