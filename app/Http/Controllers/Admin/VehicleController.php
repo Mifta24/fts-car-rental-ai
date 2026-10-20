@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Concerns\ResolvesCurrentRental;
 use App\Http\Controllers\Controller;
 use App\Models\Vehicle;
+use App\Services\Audit\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
 class VehicleController extends Controller
 {
     use ResolvesCurrentRental;
+
+    public function __construct(private readonly AuditLogger $audit) {}
 
     public function index(Request $request): View
     {
@@ -40,6 +43,7 @@ class VehicleController extends Controller
 
         $vehicle = $rental->vehicles()->create($data);
         $this->syncImages($vehicle, $request);
+        $this->audit->record($rental, $request->user(), 'vehicle.created', $vehicle, ['base_price' => [null, $vehicle->base_price]], $vehicle->name);
 
         return redirect()->route('admin.vehicles.index')->with('status', __('admin.vehicle_created', ['name' => $vehicle->name]));
     }
@@ -59,8 +63,11 @@ class VehicleController extends Controller
         $rental = $this->currentRental($request);
         abort_if($vehicle->rental_id !== $rental->id, 404);
 
-        $vehicle->update($this->validated($request, $vehicle));
+        $vehicle->fill($this->validated($request, $vehicle));
+        $changes = $this->audit->dirtyChanges($vehicle);
+        $vehicle->save();
         $this->syncImages($vehicle, $request);
+        $this->audit->record($rental, $request->user(), 'vehicle.updated', $vehicle, $changes, $vehicle->name);
 
         return redirect()->route('admin.vehicles.index')->with('status', __('admin.vehicle_updated', ['name' => $vehicle->name]));
     }
@@ -71,6 +78,7 @@ class VehicleController extends Controller
         abort_if($vehicle->rental_id !== $rental->id, 404);
 
         $vehicle->delete();
+        $this->audit->record($rental, $request->user(), 'vehicle.deleted', $vehicle, [], $vehicle->name);
 
         return redirect()->route('admin.vehicles.index')->with('status', __('admin.vehicle_deleted'));
     }

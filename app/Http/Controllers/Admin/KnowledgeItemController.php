@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Concerns\ResolvesCurrentRental;
 use App\Http\Controllers\Controller;
 use App\Models\RentalKnowledgeItem;
+use App\Services\Audit\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -12,6 +13,8 @@ use Illuminate\View\View;
 class KnowledgeItemController extends Controller
 {
     use ResolvesCurrentRental;
+
+    public function __construct(private readonly AuditLogger $audit) {}
 
     public function index(Request $request): View
     {
@@ -38,6 +41,7 @@ class KnowledgeItemController extends Controller
         $rental = $this->currentRental($request);
 
         $item = $rental->knowledgeItems()->create($this->validated($request));
+        $this->audit->record($rental, $request->user(), 'knowledge_item.created', $item, [], $item->title);
 
         return redirect()->route('admin.knowledge-items.index')->with('status', __('admin.knowledge_created', ['title' => $item->title]));
     }
@@ -59,7 +63,10 @@ class KnowledgeItemController extends Controller
         $rental = $this->currentRental($request);
         abort_if($knowledgeItem->rental_id !== $rental->id, 404);
 
-        $knowledgeItem->update($this->validated($request));
+        $knowledgeItem->fill($this->validated($request));
+        $changes = $this->audit->dirtyChanges($knowledgeItem);
+        $knowledgeItem->save();
+        $this->audit->record($rental, $request->user(), 'knowledge_item.updated', $knowledgeItem, $changes, $knowledgeItem->title);
 
         return redirect()->route('admin.knowledge-items.index')->with('status', __('admin.knowledge_updated', ['title' => $knowledgeItem->title]));
     }
@@ -70,6 +77,7 @@ class KnowledgeItemController extends Controller
         abort_if($knowledgeItem->rental_id !== $rental->id, 404);
 
         $knowledgeItem->delete();
+        $this->audit->record($rental, $request->user(), 'knowledge_item.deleted', $knowledgeItem, [], $knowledgeItem->title);
 
         return redirect()->route('admin.knowledge-items.index')->with('status', __('admin.knowledge_deleted'));
     }

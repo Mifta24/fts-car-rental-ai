@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Rental;
 use App\Models\Vehicle;
 use App\Models\VehicleInventory;
+use App\Services\Audit\AuditLogger;
+use App\Services\Fleet\MaintenanceBlocker;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\RedirectResponse;
@@ -25,6 +27,8 @@ class VehicleInventoryController extends Controller
     private const MAX_RANGE_DAYS = 366;
 
     private const LISTED_DAYS = 60;
+
+    public function __construct(private readonly AuditLogger $audit, private readonly MaintenanceBlocker $blocker) {}
 
     public function index(Request $request, Vehicle $vehicle): View
     {
@@ -102,6 +106,14 @@ class VehicleInventoryController extends Controller
                 $touched++;
             }
         });
+
+        $this->blocker->sync($vehicle);
+        $this->audit->record($rental, $request->user(), 'inventory.updated', $vehicle, [
+            'range' => [$start->toDateString(), $end->toDateString()],
+            'days' => $touched,
+            'total_units' => $data['total_units'],
+            'price' => $data['price'],
+        ], $vehicle->name);
 
         return redirect()
             ->route('admin.vehicles.inventory', ['vehicle' => $vehicle, 'from' => $start->toDateString()])

@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\ResolvesCurrentRental;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\HandoverRequest;
+use App\Models\VehicleMaintenance;
 use App\Services\Agent\AgentService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -41,6 +42,7 @@ class DashboardController extends Controller
             'stats' => $stats,
             'recentBookings' => $recentBookings,
             'openHandovers' => $openHandovers,
+            'expiryAlerts' => VehicleMaintenance::expiryAlerts($rental),
             'modelFailure' => AgentService::lastModelFailure(),
         ]);
     }

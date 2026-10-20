@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\ConversationMessage;
 use App\Models\HandoverRequest;
+use App\Services\Audit\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,6 +15,8 @@ use Illuminate\View\View;
 class HandoverController extends Controller
 {
     use ResolvesCurrentRental;
+
+    public function __construct(private readonly AuditLogger $audit) {}
 
     public function index(Request $request): View
     {
@@ -53,6 +56,8 @@ class HandoverController extends Controller
             'content' => $data['message'],
         ]);
 
+        $this->audit->record($rental, $request->user(), 'handover.replied', $handover, [], '#'.$handover->id);
+
         return back()->with('status', __('admin.handover_replied'));
     }
 
@@ -63,6 +68,7 @@ class HandoverController extends Controller
 
         $handover->update(['status' => HandoverRequest::STATUS_RESOLVED, 'resolved_at' => now(), 'assigned_to' => $request->user()->id]);
         $handover->conversation->update(['status' => Conversation::STATUS_ACTIVE]);
+        $this->audit->record($rental, $request->user(), 'handover.resolved', $handover, [], '#'.$handover->id);
 
         return redirect()->route('admin.handovers.index')->with('status', __('admin.handover_resolved'));
     }
