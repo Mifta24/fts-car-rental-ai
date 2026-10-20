@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AddonController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BookingController;
+use App\Http\Controllers\Admin\BookingInspectionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DurationDiscountController;
 use App\Http\Controllers\Admin\HandoverController;
@@ -40,6 +41,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('knowledge-items', [KnowledgeItemController::class, 'index'])->name('knowledge-items.index');
         Route::get('pricing', [PricingController::class, 'index'])->name('pricing.index');
         Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
+        Route::get('bookings/{booking}/inspections/{type}', [BookingInspectionController::class, 'show'])->whereIn('type', ['pickup', 'return'])->name('bookings.inspection.show');
+        Route::get('inspections/{inspection}/photos/{index}', [BookingInspectionController::class, 'photo'])->whereNumber('index')->name('inspections.photo');
+        Route::get('inspections/{inspection}/signature', [BookingInspectionController::class, 'signature'])->name('inspections.signature');
         Route::get('handovers', [HandoverController::class, 'index'])->name('handovers.index');
         Route::get('handovers/{handover}', [HandoverController::class, 'show'])->name('handovers.show');
 
@@ -61,6 +65,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('pricing/duration-discounts', [DurationDiscountController::class, 'store'])->name('duration-discounts.store');
             Route::delete('pricing/duration-discounts/{durationDiscount}', [DurationDiscountController::class, 'destroy'])->name('duration-discounts.destroy');
 
+            Route::post('bookings/{booking}/inspections/{type}', [BookingInspectionController::class, 'store'])->whereIn('type', ['pickup', 'return'])->name('bookings.inspection.store');
             Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.status');
 
             Route::post('handovers/{handover}/reply', [HandoverController::class, 'reply'])->name('handovers.reply');

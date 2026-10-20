@@ -47,6 +47,11 @@
                             ])>{{ ucfirst($booking->status) }}</span>
                         </td>
                         <td class="px-4 py-3 text-right">
+                            @if ($booking->status === 'confirmed' || $booking->inspections->isNotEmpty())
+                                @foreach (['pickup' => 'Pickup check', 'return' => 'Return check'] as $inspectionType => $inspectionLabel)
+                                    <a href="{{ route('admin.bookings.inspection.show', [$booking, $inspectionType]) }}" class="mr-3 {{ $booking->inspection($inspectionType) ? 'text-emerald-600' : 'text-slate-600' }} hover:underline">{{ $booking->inspection($inspectionType) ? '✓ ' : '' }}{{ $inspectionLabel }}</a>
+                                @endforeach
+                            @endif
                             @can('write-rental')
                             @if (in_array($booking->status, ['pending', 'cancelled', 'expired'], true))
                                 <form method="POST" action="{{ route('admin.bookings.status', $booking) }}" class="inline">

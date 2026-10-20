@@ -27,7 +27,7 @@ class BookingController extends Controller
             : null;
 
         $bookings = $rental->bookings()
-            ->with('vehicle')
+            ->with('vehicle', 'inspections')
             ->when($status, fn ($q) => $q->where('status', $status))
             ->latest()
             ->paginate(20)

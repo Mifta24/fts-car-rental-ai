@@ -28,7 +28,7 @@ class AuditLogController extends Controller
             'rental' => $rental,
             'logs' => $logs,
             'area' => $area,
-            'areas' => ['booking', 'vehicle', 'inventory', 'maintenance', 'pricing', 'knowledge_item', 'handover', 'team'],
+            'areas' => ['booking', 'vehicle', 'inventory', 'maintenance', 'pricing', 'inspection', 'knowledge_item', 'handover', 'team'],
         ]);
     }
 }

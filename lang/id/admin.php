@@ -29,4 +29,9 @@ return [
     'pricing_saved' => 'Harga disimpan.',
     'pricing_deleted' => 'Dihapus.',
     'promo_percent_max' => 'Diskon persen tidak boleh lebih dari 100.',
+    'inspection_saved' => 'Laporan kondisi disimpan.',
+    'inspection_exists' => 'Laporan kondisi ini sudah diselesaikan.',
+    'inspection_needs_confirmed' => 'Hanya booking yang sudah dikonfirmasi yang bisa diserahterimakan.',
+    'inspection_needs_pickup' => 'Selesaikan pemeriksaan pengambilan sebelum pemeriksaan pengembalian.',
+    'inspection_signature_invalid' => 'Mohon minta pelanggan menandatangani lagi.',
 ];

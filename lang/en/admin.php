@@ -29,4 +29,9 @@ return [
     'pricing_saved' => 'Pricing saved.',
     'pricing_deleted' => 'Deleted.',
     'promo_percent_max' => 'A percentage discount cannot be more than 100.',
+    'inspection_saved' => 'Condition report saved.',
+    'inspection_exists' => 'This condition report has already been completed.',
+    'inspection_needs_confirmed' => 'Only a confirmed booking can be handed over.',
+    'inspection_needs_pickup' => 'Complete the pickup check before the return check.',
+    'inspection_signature_invalid' => 'Please have the customer sign again.',
 ];

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'reference',
@@ -59,6 +60,16 @@ class Booking extends Model
     public function vehicle(): BelongsTo
     {
         return $this->belongsTo(Vehicle::class);
+    }
+
+    public function inspections(): HasMany
+    {
+        return $this->hasMany(BookingInspection::class);
+    }
+
+    public function inspection(string $type): ?BookingInspection
+    {
+        return $this->inspections->firstWhere('type', $type);
     }
 
     public function conversation(): BelongsTo

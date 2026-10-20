@@ -29,4 +29,9 @@ return [
     'pricing_saved' => '料金を保存しました。',
     'pricing_deleted' => '削除しました。',
     'promo_percent_max' => '割引率は100を超えられません。',
+    'inspection_saved' => '状態確認書を保存しました。',
+    'inspection_exists' => 'この状態確認書はすでに完了しています。',
+    'inspection_needs_confirmed' => '確定済みの予約のみ引き渡しできます。',
+    'inspection_needs_pickup' => '返却確認の前に引き取り確認を完了してください。',
+    'inspection_signature_invalid' => 'お客様に再度署名してもらってください。',
 ];
