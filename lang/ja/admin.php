@@ -26,4 +26,7 @@ return [
     'maintenance_completed' => '完了にしました。車両は在庫に戻ります。',
     'maintenance_deleted' => '整備記録を削除しました。',
     'maintenance_conflict' => ':count 日分に、空き車両がなくなる顧客予約があります(:dates)。先に予約を移動またはキャンセルしてください。',
+    'pricing_saved' => '料金を保存しました。',
+    'pricing_deleted' => '削除しました。',
+    'promo_percent_max' => '割引率は100を超えられません。',
 ];

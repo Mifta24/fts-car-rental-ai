@@ -32,7 +32,12 @@
                         </td>
                         <td class="px-4 py-3">{{ $booking->unit_count }} × {{ $booking->vehicle->name }}<p class="text-xs text-slate-400">{{ $booking->passengers }} passengers{{ $booking->with_driver ? ' · with driver' : ' · self-drive' }}</p></td>
                         <td class="px-4 py-3 text-xs text-slate-500">{{ $booking->pickup_date->toFormattedDateString() }} → {{ $booking->return_date->toFormattedDateString() }}</td>
-                        <td class="px-4 py-3">{{ $rental->currency }} {{ number_format((float) $booking->total_price, 0, ',', '.') }}</td>
+                        <td class="px-4 py-3">
+                            {{ $rental->currency }} {{ number_format((float) $booking->total_price, 0, ',', '.') }}
+                            @foreach ($booking->addons ?? [] as $extra)<p class="text-xs text-slate-400">+ {{ $extra['name'] }} ({{ number_format((float) $extra['total'], 0, ',', '.') }})</p>@endforeach
+                            @if ((float) $booking->duration_discount > 0)<p class="text-xs text-slate-400">− long rental {{ number_format((float) $booking->duration_discount, 0, ',', '.') }}</p>@endif
+                            @if ($booking->promo_code)<p class="text-xs text-slate-400">− {{ $booking->promo_code }} {{ number_format((float) $booking->promo_discount, 0, ',', '.') }}</p>@endif
+                        </td>
                         <td class="px-4 py-3">
                             <span @class([
                                 'rounded-full px-2 py-0.5 text-xs',

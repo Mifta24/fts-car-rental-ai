@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\PricingOptionRejected;
 use App\Models\Conversation;
 use App\Models\Rental;
 use App\Models\Vehicle;
@@ -32,7 +33,10 @@ class ReservationController extends Controller
         $data = $request->validate($this->tripRules($rental), $this->validationMessages($locale));
         [$vehicle, $pickupDate, $returnDate, $units, $withDriver] = $this->resolveTrip($rental, $data, $locale);
 
-        $quote = $this->reservations->quote($vehicle, $pickupDate, $returnDate, $units, $withDriver);
+        $quote = $this->priced(fn () => $this->reservations->quote(
+            $vehicle, $pickupDate, $returnDate, $units, $withDriver,
+            addonIds: $data['addons'] ?? [], promoCode: $data['promo_code'] ?? null, locale: $locale,
+        ), $locale);
 
         if (! $quote) {
             return $this->unavailable($rental, $vehicle, $data, $locale);
@@ -43,6 +47,11 @@ class ReservationController extends Controller
             'days' => $quote['days'],
             'vehicle_total' => $quote['vehicle_total'],
             'driver_total' => $quote['driver_total'],
+            'addons' => $quote['addons'],
+            'addons_total' => $quote['addons_total'],
+            'duration_discount' => $quote['duration_discount'],
+            'promo' => $quote['promo'],
+            'discount_total' => $quote['discount_total'],
             'grand_total' => $quote['grand_total'],
             'currency' => $rental->currency,
         ]);
@@ -79,18 +88,20 @@ class ReservationController extends Controller
             ? Conversation::where('rental_id', $rental->id)->where('customer_token', $data['customer_token'])->first()
             : null;
 
-        $booking = $this->reservations->createRequest($rental, $vehicle, [
+        $booking = $this->priced(fn () => $this->reservations->createRequest($rental, $vehicle, [
             'pickup_date' => $pickupDate,
             'return_date' => $returnDate,
             'passengers' => (int) $data['passengers'],
             'units' => $units,
             'with_driver' => $withDriver,
+            'addon_ids' => $data['addons'] ?? [],
+            'promo_code' => $data['promo_code'] ?? null,
             'customer_name' => $data['customer_name'],
             'customer_email' => $isEmail ? $data['contact_value'] : null,
             'customer_phone' => $isEmail ? null : $data['contact_value'],
             'contact_type' => $data['contact_type'],
             'notes' => $data['special_request'] ?? null,
-        ], $conversation);
+        ], $conversation), $locale);
 
         if (! $booking) {
             return $this->unavailable($rental, $vehicle, $data, $locale);
@@ -103,6 +114,24 @@ class ReservationController extends Controller
             'currency' => $rental->currency,
             'handover' => $this->handover->forBooking($rental, $booking, $locale),
         ], 201);
+    }
+
+    /**
+     * Runs a pricing call and shows a rejected add-on or promo code as an error on
+     * its own form field.
+     *
+     * @template T
+     *
+     * @param  \Closure(): T  $callback
+     * @return T
+     */
+    private function priced(\Closure $callback, string $locale): mixed
+    {
+        try {
+            return $callback();
+        } catch (PricingOptionRejected $rejected) {
+            throw ValidationException::withMessages([$rejected->field => trans('reservation.messages', [], $locale)[$rejected->reason]]);
+        }
     }
 
     /**
@@ -119,6 +148,9 @@ class ReservationController extends Controller
             'passengers' => ['required', 'integer', 'min:1', 'max:20'],
             'units' => ['required', 'integer', 'min:1', 'max:10'],
             'with_driver' => ['nullable', 'boolean'],
+            'addons' => ['nullable', 'array', 'max:20'],
+            'addons.*' => ['integer', 'min:1'],
+            'promo_code' => ['nullable', 'string', 'max:40'],
             'locale' => ['nullable', Rule::in(self::SUPPORTED_LOCALES)],
         ];
     }
@@ -137,6 +169,7 @@ class ReservationController extends Controller
             'min' => $messages['invalid'],
             'max' => $messages['invalid'],
             'boolean' => $messages['invalid'],
+            'array' => $messages['invalid'],
             'in' => $messages['invalid'],
             'uuid' => $messages['invalid'],
             'after_or_equal' => $messages['pickup_date_past'],

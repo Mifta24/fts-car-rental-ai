@@ -2,6 +2,7 @@
 
 namespace App\Services\Agent;
 
+use App\Exceptions\PricingOptionRejected;
 use App\Models\Conversation;
 use App\Models\HandoverRequest;
 use App\Models\Rental;
@@ -80,6 +81,11 @@ class RentalAgentTools
                     ],
                 ],
                 [
+                    'name' => 'get_pricing_options',
+                    'description' => 'List the optional extras (child seat, GPS, delivery, …) with their ids and prices, and the long-rental discounts this rental offers. Call this when the customer asks about extras, add-ons, delivery or discounts. Promo codes are never listed: only the customer can supply one.',
+                    'parameters' => ['type' => 'object', 'properties' => new \stdClass],
+                ],
+                [
                     'name' => 'check_availability',
                     'description' => 'Get the current, real-time availability and exact total price for one car over specific dates. ALWAYS call this before confirming a price or telling a customer a car is available — never state a price or availability from memory.',
                     'parameters' => [
@@ -89,6 +95,9 @@ class RentalAgentTools
                             'pickup_date' => ['type' => 'string'],
                             'return_date' => ['type' => 'string'],
                             'with_driver' => ['type' => 'boolean', 'description' => 'Whether the customer wants a driver included'],
+                            'units' => ['type' => 'integer', 'minimum' => 1, 'description' => 'Number of cars, default 1'],
+                            'addon_ids' => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Ids of extras the customer chose, from get_pricing_options'],
+                            'promo_code' => ['type' => 'string', 'description' => 'A promo code the customer gave you. Never invent one.'],
                         ],
                         'required' => ['vehicle_slug', 'pickup_date', 'return_date'],
                     ],
@@ -105,6 +114,8 @@ class RentalAgentTools
                             'passengers' => ['type' => 'integer'],
                             'units' => ['type' => 'integer', 'minimum' => 1, 'description' => 'Number of cars, default 1'],
                             'with_driver' => ['type' => 'boolean'],
+                            'addon_ids' => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Ids of extras the customer chose, from get_pricing_options'],
+                            'promo_code' => ['type' => 'string', 'description' => 'A promo code the customer gave you. Never invent one.'],
                             'customer_name' => ['type' => 'string'],
                             'customer_email' => ['type' => 'string'],
                             'customer_phone' => ['type' => 'string'],
@@ -142,6 +153,7 @@ class RentalAgentTools
             'search_knowledge' => $this->searchKnowledge($input),
             'search_vehicles' => $this->searchVehicles($input),
             'get_vehicle_detail' => $this->getVehicleDetail($input),
+            'get_pricing_options' => $this->getPricingOptions(),
             'check_availability' => $this->checkAvailability($input),
             'create_booking_request' => $this->createBookingRequest($input),
             'request_human_handover' => $this->requestHumanHandover($input),
@@ -308,7 +320,15 @@ class RentalAgentTools
         }
 
         $withDriver = (bool) ($input['with_driver'] ?? false);
-        $trip = $this->reservations->quote($vehicle, $pickupDate, $returnDate, withDriver: $withDriver);
+
+        try {
+            $trip = $this->reservations->quote(
+                $vehicle, $pickupDate, $returnDate, max(1, (int) ($input['units'] ?? 1)), $withDriver,
+                addonIds: $this->addonIds($input), promoCode: $input['promo_code'] ?? null, locale: $this->locale,
+            );
+        } catch (PricingOptionRejected $rejected) {
+            return $this->rejectedOption($rejected);
+        }
 
         if (! $trip) {
             return [
@@ -331,6 +351,10 @@ class RentalAgentTools
             'daily_breakdown' => $trip['daily'],
             'vehicle_total' => $trip['vehicle_total'],
             'driver_total' => $trip['driver_total'],
+            'extras' => $trip['addons'],
+            'extras_total' => $trip['addons_total'],
+            'long_rental_discount' => $trip['duration_discount'],
+            'promo' => $trip['promo'],
             'grand_total' => $trip['grand_total'],
             'currency' => $this->rental->currency,
             'min_available_units' => $trip['min_available_units'],
@@ -360,17 +384,23 @@ class RentalAgentTools
             return ['text' => 'This party does not fit that car for the requested number of units. Suggest a larger car or more units.', 'ui' => null];
         }
 
-        $booking = $this->reservations->createRequest($this->rental, $vehicle, [
-            'pickup_date' => $pickupDate,
-            'return_date' => $returnDate,
-            'passengers' => (int) $input['passengers'],
-            'units' => $units,
-            'with_driver' => (bool) ($input['with_driver'] ?? false),
-            'customer_name' => $input['customer_name'],
-            'customer_email' => $input['customer_email'] ?? null,
-            'customer_phone' => $input['customer_phone'],
-            'notes' => $input['notes'] ?? null,
-        ], $this->conversation);
+        try {
+            $booking = $this->reservations->createRequest($this->rental, $vehicle, [
+                'pickup_date' => $pickupDate,
+                'return_date' => $returnDate,
+                'passengers' => (int) $input['passengers'],
+                'units' => $units,
+                'with_driver' => (bool) ($input['with_driver'] ?? false),
+                'addon_ids' => $this->addonIds($input),
+                'promo_code' => $input['promo_code'] ?? null,
+                'customer_name' => $input['customer_name'],
+                'customer_email' => $input['customer_email'] ?? null,
+                'customer_phone' => $input['customer_phone'],
+                'notes' => $input['notes'] ?? null,
+            ], $this->conversation);
+        } catch (PricingOptionRejected $rejected) {
+            return $this->rejectedOption($rejected);
+        }
 
         if (! $booking) {
             return [
@@ -387,6 +417,9 @@ class RentalAgentTools
             'return_date' => $returnDate->toDateString(),
             'days' => $days,
             'units' => $units,
+            'extras' => $booking->addons ?? [],
+            'promo_code' => $booking->promo_code,
+            'discount_total' => (float) $booking->duration_discount + (float) $booking->promo_discount,
             'total_price' => (float) $booking->total_price,
             'currency' => $this->rental->currency,
             'status' => 'pending_confirmation',
@@ -426,7 +459,50 @@ class RentalAgentTools
         ];
     }
 
+    private function getPricingOptions(): array
+    {
+        $payload = [
+            'currency' => $this->rental->currency,
+            'extras' => $this->rental->addons()->where('is_active', true)->get()->map(fn ($addon) => [
+                'id' => $addon->id,
+                'name' => $addon->translatedName($this->locale),
+                'price' => (float) $addon->price,
+                'charged' => $addon->charge === 'per_day' ? 'per day, per car' : 'once per booking',
+            ])->all(),
+            'long_rental_discounts' => $this->rental->durationDiscounts()->get()->map(fn ($discount) => [
+                'from_days' => $discount->min_days,
+                'percent_off_car_price' => (float) $discount->percent,
+            ])->all(),
+        ];
+
+        return ['text' => json_encode($payload, JSON_UNESCAPED_UNICODE), 'ui' => null];
+    }
+
     // --- helpers ---
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @return list<int>
+     */
+    private function addonIds(array $input): array
+    {
+        return array_values(array_filter(array_map('intval', (array) ($input['addon_ids'] ?? []))));
+    }
+
+    /**
+     * @return array{text: string, ui: null}
+     */
+    private function rejectedOption(PricingOptionRejected $rejected): array
+    {
+        return [
+            'text' => json_encode([
+                'applied' => false,
+                'problem' => trans('reservation.messages', [], $this->locale)[$rejected->reason],
+                'instruction' => 'Tell the customer plainly and continue without this option unless they give a different one. Never guess or invent a code or extra.',
+            ], JSON_UNESCAPED_UNICODE),
+            'ui' => null,
+        ];
+    }
 
     private function findVehicle(string $slug): ?Vehicle
     {

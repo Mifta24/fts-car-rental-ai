@@ -74,6 +74,21 @@ class Rental extends Model
         return $this->hasMany(Booking::class);
     }
 
+    public function addons(): HasMany
+    {
+        return $this->hasMany(RentalAddon::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function promoCodes(): HasMany
+    {
+        return $this->hasMany(PromoCode::class);
+    }
+
+    public function durationDiscounts(): HasMany
+    {
+        return $this->hasMany(DurationDiscount::class)->orderBy('min_days');
+    }
+
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class);

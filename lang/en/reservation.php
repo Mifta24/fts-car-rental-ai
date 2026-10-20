@@ -11,5 +11,10 @@ return [
         'unavailable' => 'This car is not available for those dates.',
         'contact_email' => 'Please enter a valid email address.',
         'contact_phone' => 'Please enter a valid phone or WhatsApp number.',
+        'promo_invalid' => 'This promo code is not valid.',
+        'promo_expired' => 'This promo code is not valid on today\'s date.',
+        'promo_min_days' => 'This promo code needs a longer rental.',
+        'promo_used_up' => 'This promo code has been fully used.',
+        'addon_unknown' => 'One of the extras is no longer available.',
     ],
 ];

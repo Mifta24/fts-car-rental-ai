@@ -20,6 +20,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'passengers',
     'unit_count',
     'with_driver',
+    'addons',
+    'duration_discount',
+    'promo_code',
+    'promo_discount',
     'total_price',
     'status',
     'notes',
@@ -40,6 +44,9 @@ class Booking extends Model
             'pickup_date' => 'date',
             'return_date' => 'date',
             'with_driver' => 'boolean',
+            'addons' => 'array',
+            'duration_discount' => 'decimal:2',
+            'promo_discount' => 'decimal:2',
             'total_price' => 'decimal:2',
         ];
     }

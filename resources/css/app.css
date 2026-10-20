@@ -409,6 +409,9 @@ a.info-fact:hover { border-color: var(--text); background: #ffffff14; }
 .wizard-vehicle.is-disabled { cursor: not-allowed; opacity: .45; }
 .wizard-check { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-size: 14px; }
 .wizard-check[hidden] { display: none; }
+.wizard-extras { margin-top: 18px; }
+.wizard-extras legend { font-size: 13px; opacity: 0.8; }
+.wizard-extras small { display: block; opacity: 0.65; font-size: 12px; }
 .wizard-check input { width: 18px; height: 18px; accent-color: var(--lime); }
 .wizard-pills { display: flex; flex-wrap: wrap; gap: 8px; }
 .wizard-pills label { cursor: pointer; }

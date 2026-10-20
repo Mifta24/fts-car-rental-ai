@@ -26,4 +26,7 @@ return [
     'maintenance_completed' => 'Ditandai selesai — mobil kembali ke inventori.',
     'maintenance_deleted' => 'Catatan perawatan dihapus.',
     'maintenance_conflict' => ':count hari sudah memiliki booking pelanggan yang membuat tidak ada mobil tersisa (:dates). Pindahkan atau batalkan booking tersebut dulu.',
+    'pricing_saved' => 'Harga disimpan.',
+    'pricing_deleted' => 'Dihapus.',
+    'promo_percent_max' => 'Diskon persen tidak boleh lebih dari 100.',
 ];

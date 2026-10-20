@@ -39,7 +39,7 @@ function initReservationWizard() {
     };
 
     const fieldStep = {
-        pickup_date: 1, return_date: 1, passengers: 2, units: 2, vehicle_slug: 3, with_driver: 3,
+        pickup_date: 1, return_date: 1, passengers: 2, units: 2, vehicle_slug: 3, with_driver: 3, addons: 3, promo_code: 3,
         customer_name: 4, contact_type: 4, contact_value: 4, special_request: 4,
     };
 
@@ -71,6 +71,8 @@ function initReservationWizard() {
             units: Number(data.get('units')) || 0,
             vehicle_slug: data.get('vehicle_slug') || '',
             with_driver: form.elements.with_driver.checked && !withDriverField.hidden,
+            addons: [...form.querySelectorAll('input[name="addons"]:checked')].map((box) => Number(box.value)),
+            promo_code: (data.get('promo_code') || '').trim().toUpperCase(),
             customer_name: (data.get('customer_name') || '').trim(),
             contact_type: data.get('contact_type') || 'whatsapp',
             contact_value: (data.get('contact_value') || '').trim(),
@@ -101,6 +103,8 @@ function initReservationWizard() {
             if (saved.contact_type) form.elements.contact_type.value = saved.contact_type;
             if (saved.vehicle_slug) form.elements.vehicle_slug.value = saved.vehicle_slug;
             form.elements.with_driver.checked = Boolean(saved.with_driver);
+            form.querySelectorAll('input[name="addons"]').forEach((box) => { box.checked = (saved.addons || []).includes(Number(box.value)); });
+            if (saved.promo_code && form.elements.promo_code) form.elements.promo_code.value = saved.promo_code;
             current = Math.min(Math.max(Number(draft.step) || 1, 1), steps.length);
         } catch { /* ignore a corrupt draft */ }
     }
@@ -241,8 +245,8 @@ function initReservationWizard() {
     }
 
     function tripPayload() {
-        const { pickup_date, return_date, passengers, units, vehicle_slug, with_driver } = values();
-        return { pickup_date, return_date, passengers, units, vehicle_slug, with_driver, locale: config.locale };
+        const { pickup_date, return_date, passengers, units, vehicle_slug, with_driver, addons, promo_code } = values();
+        return { pickup_date, return_date, passengers, units, vehicle_slug, with_driver, addons, promo_code: promo_code || undefined, locale: config.locale };
     }
 
     function handleFailure(result) {
@@ -313,6 +317,9 @@ function initReservationWizard() {
             summaryRow(labels.vehicle, vehicle, 3),
             summaryRow(labels.contact, `${data.customer_name} · ${labels[data.contact_type]}: ${data.contact_value}`, 4),
         ];
+        if (quote?.addons?.length) rows.push(summaryRow(labels.extras, quote.addons.map((addon) => `${addon.name} (${money(addon.total)})`).join(', '), 3));
+        if (quote?.duration_discount?.amount > 0) rows.push(summaryRow(labels.long_discount, `−${money(quote.duration_discount.amount)}`, 1));
+        if (quote?.promo) rows.push(summaryRow(labels.promo_applied, `${quote.promo.code} · −${money(quote.promo.amount)}`, 3));
         if (data.special_request) rows.push(summaryRow(labels.special, data.special_request, 4));
 
         root.querySelector('[data-summary]').replaceChildren(...rows);

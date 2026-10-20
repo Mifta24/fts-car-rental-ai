@@ -72,6 +72,24 @@
                         <input type="checkbox" name="with_driver" value="1">
                         <span>{{ $wizard['with_driver'] }}</span>
                     </label>
+                    @if (($addons ?? collect())->isNotEmpty())
+                        <fieldset class="wizard-extras">
+                            <legend>{{ $wizard['extras'] }}</legend>
+                            @foreach ($addons as $addon)
+                                <label class="wizard-check">
+                                    <input type="checkbox" name="addons" value="{{ $addon->id }}">
+                                    <span>{{ $addon->translatedName($locale) }} · {{ $rental->currency }} {{ number_format((float) $addon->price, 0, ',', '.') }}
+                                        <small>{{ $addon->charge === 'per_day' ? $wizard['extra_per_day'] : $wizard['extra_per_booking'] }}</small></span>
+                                </label>
+                            @endforeach
+                        </fieldset>
+                    @endif
+                    @if ($hasPromoCodes ?? false)
+                        <label class="wizard-field wizard-field-wide">
+                            <span>{{ $wizard['promo_code'] }}</span>
+                            <input type="text" name="promo_code" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false">
+                        </label>
+                    @endif
                 </div>
 
                 <div data-step="4" class="wizard-step" hidden>

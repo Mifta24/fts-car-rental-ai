@@ -132,6 +132,8 @@ class RentalPageController extends Controller
             ...$this->stageData($rental, $locale, 'reservation'),
             'preselectedVehicle' => (string) $request->query('vehicle', ''),
             'prefill' => $this->reservationPrefill($request),
+            'addons' => $rental->addons()->where('is_active', true)->get(),
+            'hasPromoCodes' => $rental->promoCodes()->where('is_active', true)->exists(),
         ]);
     }
 

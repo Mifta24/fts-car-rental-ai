@@ -2,9 +2,13 @@
 
 namespace App\Services\Reservation;
 
+use App\Exceptions\PricingOptionRejected;
 use App\Models\Booking;
 use App\Models\Conversation;
+use App\Models\DurationDiscount;
+use App\Models\PromoCode;
 use App\Models\Rental;
+use App\Models\RentalAddon;
 use App\Models\Vehicle;
 use App\Models\VehicleInventory;
 use Carbon\CarbonImmutable;
@@ -40,7 +44,12 @@ class ReservationService
      * lacks enough free units — this is the one place price and availability
      * truth comes from, never the model.
      *
-     * @return array{days: int, daily: list<array{date: string, price: float}>, vehicle_total: float, driver_total: float, grand_total: float, min_available_units: int}|null
+     * `vehicle_total` is the gross rental price; discounts are listed apart and
+     * already subtracted from `grand_total`. Throws PricingOptionRejected when a
+     * requested add-on or promo code cannot be applied.
+     *
+     * @param  list<int>  $addonIds
+     * @return array{days: int, daily: list<array{date: string, price: float}>, vehicle_total: float, driver_total: float, addons: list<array{id: int, name: string, charge: string, price: float, total: float}>, addons_total: float, duration_discount: array{percent: float, amount: float}, promo: array{code: string, amount: float}|null, discount_total: float, grand_total: float, min_available_units: int}|null
      */
     public function quote(
         Vehicle $vehicle,
@@ -49,6 +58,9 @@ class ReservationService
         int $units = 1,
         bool $withDriver = false,
         bool $lockForUpdate = false,
+        array $addonIds = [],
+        ?string $promoCode = null,
+        string $locale = '',
     ): ?array {
         $days = $pickupDate->diffInDays($returnDate);
 
@@ -90,21 +102,89 @@ class ReservationService
             ? (float) $vehicle->driver_price * $days * $units
             : 0.0;
 
+        $addons = $this->resolveAddons($vehicle, $addonIds, $days, $units, $locale);
+        $addonsTotal = array_sum(array_column($addons, 'total'));
+
+        $durationPercent = (float) (DurationDiscount::where('rental_id', $vehicle->rental_id)->where('min_days', '<=', $days)->max('percent') ?? 0);
+        $durationAmount = round($vehicleTotal * $durationPercent / 100, 2);
+
+        $promo = $promoCode !== null && trim($promoCode) !== ''
+            ? $this->resolvePromo($vehicle, $promoCode, $days)
+            : null;
+        $promoAmount = $promo ? $promo->discountOn($vehicleTotal - $durationAmount) : 0.0;
+
         return [
             'days' => $days,
             'daily' => $daily,
             'vehicle_total' => $vehicleTotal,
             'driver_total' => $driverTotal,
-            'grand_total' => $vehicleTotal + $driverTotal,
+            'addons' => $addons,
+            'addons_total' => $addonsTotal,
+            'duration_discount' => ['percent' => $durationPercent, 'amount' => $durationAmount],
+            'promo' => $promo ? ['code' => $promo->code, 'amount' => $promoAmount] : null,
+            'discount_total' => $durationAmount + $promoAmount,
+            'grand_total' => $vehicleTotal - $durationAmount - $promoAmount + $driverTotal + $addonsTotal,
             'min_available_units' => $minAvailable,
         ];
+    }
+
+    /**
+     * @param  list<int>  $addonIds
+     * @return list<array{id: int, name: string, charge: string, price: float, total: float}>
+     */
+    private function resolveAddons(Vehicle $vehicle, array $addonIds, int $days, int $units, string $locale): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $addonIds)));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $addons = RentalAddon::where('rental_id', $vehicle->rental_id)->where('is_active', true)->whereIn('id', $ids)->orderBy('sort_order')->orderBy('id')->get();
+
+        if ($addons->count() !== count($ids)) {
+            throw new PricingOptionRejected('addons', 'addon_unknown');
+        }
+
+        return $addons->map(fn (RentalAddon $addon) => [
+            'id' => $addon->id,
+            'name' => $addon->translatedName($locale),
+            'charge' => $addon->charge,
+            'price' => (float) $addon->price,
+            'total' => $addon->totalFor($days, $units),
+        ])->all();
+    }
+
+    private function resolvePromo(Vehicle $vehicle, string $code, int $days): PromoCode
+    {
+        $promo = PromoCode::where('rental_id', $vehicle->rental_id)->where('code', PromoCode::normalize($code))->where('is_active', true)->first();
+
+        if (! $promo) {
+            throw new PricingOptionRejected('promo_code', 'promo_invalid');
+        }
+
+        $today = now($vehicle->rental->timezone)->toDateString();
+
+        if (($promo->valid_from && $promo->valid_from->toDateString() > $today) || ($promo->valid_until && $promo->valid_until->toDateString() < $today)) {
+            throw new PricingOptionRejected('promo_code', 'promo_expired');
+        }
+
+        if ($days < $promo->min_days) {
+            throw new PricingOptionRejected('promo_code', 'promo_min_days');
+        }
+
+        if ($promo->max_uses !== null && $promo->usesCount() >= $promo->max_uses) {
+            throw new PricingOptionRejected('promo_code', 'promo_used_up');
+        }
+
+        return $promo;
     }
 
     /**
      * Creates a pending reservation request and holds the inventory for it.
      * Returns null when the vehicle is no longer available for those days.
      *
-     * @param  array{pickup_date: CarbonImmutable, return_date: CarbonImmutable, passengers: int, units?: int, with_driver?: bool, customer_name: string, customer_email?: ?string, customer_phone?: ?string, contact_type?: ?string, notes?: ?string}  $data
+     * @param  array{pickup_date: CarbonImmutable, return_date: CarbonImmutable, passengers: int, units?: int, with_driver?: bool, addon_ids?: list<int>, promo_code?: ?string, customer_name: string, customer_email?: ?string, customer_phone?: ?string, contact_type?: ?string, notes?: ?string}  $data
      */
     public function createRequest(Rental $rental, Vehicle $vehicle, array $data, ?Conversation $conversation = null): ?Booking
     {
@@ -112,7 +192,7 @@ class ReservationService
         $withDriver = (bool) ($data['with_driver'] ?? false);
 
         $booking = DB::transaction(function () use ($rental, $vehicle, $data, $conversation, $units, $withDriver) {
-            $quote = $this->quote($vehicle, $data['pickup_date'], $data['return_date'], $units, $withDriver, lockForUpdate: true);
+            $quote = $this->quote($vehicle, $data['pickup_date'], $data['return_date'], $units, $withDriver, lockForUpdate: true, addonIds: $data['addon_ids'] ?? [], promoCode: $data['promo_code'] ?? null);
 
             if (! $quote) {
                 return null;
@@ -132,6 +212,10 @@ class ReservationService
                 'passengers' => $data['passengers'],
                 'unit_count' => $units,
                 'with_driver' => $withDriver && $vehicle->driver_available,
+                'addons' => $quote['addons'] === [] ? null : $quote['addons'],
+                'duration_discount' => $quote['duration_discount']['amount'],
+                'promo_code' => $quote['promo']['code'] ?? null,
+                'promo_discount' => $quote['promo']['amount'] ?? 0,
                 'total_price' => $quote['grand_total'],
                 'status' => Booking::STATUS_PENDING,
                 'notes' => $data['notes'] ?? null,

@@ -1,10 +1,14 @@
 <?php
 
+use App\Http\Controllers\Admin\AddonController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DurationDiscountController;
 use App\Http\Controllers\Admin\HandoverController;
 use App\Http\Controllers\Admin\KnowledgeItemController;
+use App\Http\Controllers\Admin\PricingController;
+use App\Http\Controllers\Admin\PromoCodeController;
 use App\Http\Controllers\Admin\RentalSwitchController;
 use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\VehicleController;
@@ -34,6 +38,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('vehicles/{vehicle}/inventory', [VehicleInventoryController::class, 'index'])->name('vehicles.inventory');
         Route::get('vehicles/{vehicle}/maintenance', [VehicleMaintenanceController::class, 'index'])->name('vehicles.maintenance.index');
         Route::get('knowledge-items', [KnowledgeItemController::class, 'index'])->name('knowledge-items.index');
+        Route::get('pricing', [PricingController::class, 'index'])->name('pricing.index');
         Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
         Route::get('handovers', [HandoverController::class, 'index'])->name('handovers.index');
         Route::get('handovers/{handover}', [HandoverController::class, 'show'])->name('handovers.show');
@@ -46,6 +51,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('vehicles/{vehicle}/maintenance/{maintenance}', [VehicleMaintenanceController::class, 'destroy'])->name('vehicles.maintenance.destroy');
             Route::resource('vehicles', VehicleController::class)->except(['index', 'show']);
             Route::resource('knowledge-items', KnowledgeItemController::class)->except(['index', 'show']);
+
+            Route::post('pricing/addons', [AddonController::class, 'store'])->name('addons.store');
+            Route::put('pricing/addons/{addon}', [AddonController::class, 'update'])->name('addons.update');
+            Route::delete('pricing/addons/{addon}', [AddonController::class, 'destroy'])->name('addons.destroy');
+            Route::post('pricing/promo-codes', [PromoCodeController::class, 'store'])->name('promo-codes.store');
+            Route::put('pricing/promo-codes/{promoCode}', [PromoCodeController::class, 'update'])->name('promo-codes.update');
+            Route::delete('pricing/promo-codes/{promoCode}', [PromoCodeController::class, 'destroy'])->name('promo-codes.destroy');
+            Route::post('pricing/duration-discounts', [DurationDiscountController::class, 'store'])->name('duration-discounts.store');
+            Route::delete('pricing/duration-discounts/{durationDiscount}', [DurationDiscountController::class, 'destroy'])->name('duration-discounts.destroy');
 
             Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.status');
 

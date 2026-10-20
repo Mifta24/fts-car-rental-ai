@@ -26,4 +26,7 @@ return [
     'maintenance_completed' => 'Marked as done — the car is back in the inventory.',
     'maintenance_deleted' => 'Maintenance record deleted.',
     'maintenance_conflict' => ':count day(s) already have customer bookings that would leave no car free (:dates). Move or cancel those bookings first.',
+    'pricing_saved' => 'Pricing saved.',
+    'pricing_deleted' => 'Deleted.',
+    'promo_percent_max' => 'A percentage discount cannot be more than 100.',
 ];

@@ -297,6 +297,16 @@ function initAgent() {
             <p class="text-xs text-slate-500">${q.pickup_date} → ${q.return_date} · ${q.days} ${config.labels.day}</p>
             <p class="mt-1 text-base font-semibold text-slate-900">${money(q.grand_total)}</p>
         `;
+        const savings = (q.long_rental_discount?.amount || 0) + (q.promo?.amount || 0);
+        if (savings > 0 || q.extras_total > 0) {
+            const note = document.createElement('p');
+            note.className = 'text-xs text-slate-500';
+            note.textContent = [
+                q.extras_total > 0 ? `+ ${money(q.extras_total)}` : '',
+                savings > 0 ? `− ${money(savings)}` : '',
+            ].filter(Boolean).join('  ');
+            el.appendChild(note);
+        }
         return el;
     }
 
