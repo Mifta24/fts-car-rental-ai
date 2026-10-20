@@ -17,4 +17,13 @@ return [
     'inventory_saved' => ':count 日分の在庫を保存しました。',
     'inventory_range_too_long' => '日付の範囲は :days 日以内にしてください。',
     'handover_resolved' => 'ハンドオーバーを完了しました。AIレンタルエージェントが会話に戻ります。',
+    'team_unknown_email' => 'そのメールアドレスのアカウントはありません。',
+    'team_already_member' => 'このユーザーはすでにチームに参加しています。',
+    'team_member_added' => ':name をチームに追加しました。',
+    'team_member_updated' => ':name を更新しました。',
+    'team_last_owner' => 'レンタルには少なくとも1人の有効なオーナーが必要です。',
+    'maintenance_saved' => '整備記録を保存しました。',
+    'maintenance_completed' => '完了にしました。車両は在庫に戻ります。',
+    'maintenance_deleted' => '整備記録を削除しました。',
+    'maintenance_conflict' => ':count 日分に、空き車両がなくなる顧客予約があります(:dates)。先に予約を移動またはキャンセルしてください。',
 ];

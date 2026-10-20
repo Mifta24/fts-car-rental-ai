@@ -17,4 +17,13 @@ return [
     'inventory_saved' => 'Inventory saved for :count day(s).',
     'inventory_range_too_long' => 'The date range cannot be longer than :days days.',
     'handover_resolved' => 'Handover resolved — the AI Rental Agent is back in the conversation.',
+    'team_unknown_email' => 'No account uses that email address.',
+    'team_already_member' => 'That user is already on this team.',
+    'team_member_added' => ':name was added to the team.',
+    'team_member_updated' => ':name was updated.',
+    'team_last_owner' => 'A rental needs at least one active owner.',
+    'maintenance_saved' => 'Maintenance record saved.',
+    'maintenance_completed' => 'Marked as done — the car is back in the inventory.',
+    'maintenance_deleted' => 'Maintenance record deleted.',
+    'maintenance_conflict' => ':count day(s) already have customer bookings that would leave no car free (:dates). Move or cancel those bookings first.',
 ];

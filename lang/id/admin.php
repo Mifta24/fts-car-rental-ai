@@ -17,4 +17,13 @@ return [
     'inventory_saved' => 'Inventori disimpan untuk :count hari.',
     'inventory_range_too_long' => 'Rentang tanggal tidak boleh lebih dari :days hari.',
     'handover_resolved' => 'Handover selesai — AI Rental Agent kembali menangani percakapan.',
+    'team_unknown_email' => 'Tidak ada akun dengan email tersebut.',
+    'team_already_member' => 'Pengguna tersebut sudah ada di tim ini.',
+    'team_member_added' => ':name ditambahkan ke tim.',
+    'team_member_updated' => ':name diperbarui.',
+    'team_last_owner' => 'Sebuah rental membutuhkan setidaknya satu pemilik aktif.',
+    'maintenance_saved' => 'Catatan perawatan disimpan.',
+    'maintenance_completed' => 'Ditandai selesai — mobil kembali ke inventori.',
+    'maintenance_deleted' => 'Catatan perawatan dihapus.',
+    'maintenance_conflict' => ':count hari sudah memiliki booking pelanggan yang membuat tidak ada mobil tersisa (:dates). Pindahkan atau batalkan booking tersebut dulu.',
 ];
