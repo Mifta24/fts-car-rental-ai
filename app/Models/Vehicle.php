@@ -61,6 +61,11 @@ class Vehicle extends Model
         return $this->hasMany(VehicleInventory::class);
     }
 
+    public function maintenances(): HasMany
+    {
+        return $this->hasMany(VehicleMaintenance::class);
+    }
+
     public function maxPassengers(): int
     {
         return $this->seats;

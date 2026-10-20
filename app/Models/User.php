@@ -64,4 +64,30 @@ class User extends Authenticatable
 
         return $rentals->firstWhere('id', session(self::ACTIVE_RENTAL_SESSION_KEY)) ?? $rentals->first();
     }
+
+    /**
+     * The user's role in the rental they are working on. An unknown role is
+     * treated as the least privileged one.
+     */
+    public function currentRole(): ?string
+    {
+        $role = $this->currentRental()?->pivot?->role;
+
+        if ($role === null) {
+            return null;
+        }
+
+        return in_array($role, RentalUser::ROLES, true) ? $role : RentalUser::ROLE_VIEWER;
+    }
+
+    public function isRentalOwner(): bool
+    {
+        return $this->currentRole() === RentalUser::ROLE_OWNER;
+    }
+
+    /** Owners and staff may change data; viewers may only look. */
+    public function canWriteToRental(): bool
+    {
+        return in_array($this->currentRole(), [RentalUser::ROLE_OWNER, RentalUser::ROLE_STAFF], true);
+    }
 }

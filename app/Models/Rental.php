@@ -74,6 +74,11 @@ class Rental extends Model
         return $this->hasMany(Booking::class);
     }
 
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class);
+    }
+
     public function translatedDescription(string $locale): ?string
     {
         $value = $this->translations[$locale]['description'] ?? null;

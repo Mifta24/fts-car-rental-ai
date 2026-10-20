@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'rental_date',
     'total_units',
     'booked_units',
+    'blocked_units',
     'price',
 ])]
 class VehicleInventory extends Model
@@ -37,7 +38,7 @@ class VehicleInventory extends Model
 
     public function availableUnits(): int
     {
-        return max(0, $this->total_units - $this->booked_units);
+        return max(0, $this->total_units - $this->booked_units - $this->blocked_units);
     }
 
     public function isAvailable(): bool
