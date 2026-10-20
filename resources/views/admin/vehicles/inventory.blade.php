@@ -9,6 +9,7 @@
         </div>
     @endif
 
+    @can('write-rental')
     <form method="POST" action="{{ route('admin.vehicles.inventory.update', $vehicle) }}" class="mb-8 rounded-xl border border-slate-200 bg-white p-5">
         @csrf @method('PUT')
         <p class="mb-4 font-medium text-slate-900">Open or update a date range</p>
@@ -41,6 +42,7 @@
         <p class="mt-3 text-xs text-slate-500">Units already booked are never removed: a day with 2 booked keeps at least 2 units.</p>
         <button type="submit" class="mt-4 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Save dates</button>
     </form>
+    @endcan
 
     <div class="mb-3 flex items-center justify-between text-sm">
         <p class="text-slate-600">{{ $from->format('j M Y') }} – {{ $from->addDays($calendar->count() - 1)->format('j M Y') }}</p>
@@ -53,7 +55,7 @@
     <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
         <table class="w-full text-left text-sm">
             <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
-                <tr><th class="px-4 py-2">Date</th><th class="px-4 py-2">Price</th><th class="px-4 py-2">Units</th><th class="px-4 py-2">Booked</th><th class="px-4 py-2">Free</th></tr>
+                <tr><th class="px-4 py-2">Date</th><th class="px-4 py-2">Price</th><th class="px-4 py-2">Units</th><th class="px-4 py-2">Booked</th><th class="px-4 py-2">In workshop</th><th class="px-4 py-2">Free</th></tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
                 @foreach ($calendar as $entry)
@@ -64,9 +66,10 @@
                             <td class="px-4 py-2">{{ number_format((float) $day->price, 0, ',', '.') }}</td>
                             <td class="px-4 py-2">{{ $day->total_units }}</td>
                             <td class="px-4 py-2">{{ $day->booked_units }}</td>
+                            <td class="px-4 py-2">{{ $day->blocked_units ?: '—' }}</td>
                             <td class="px-4 py-2"><span class="rounded-full px-2 py-0.5 text-xs {{ $day->isAvailable() ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">{{ $day->availableUnits() }}</span></td>
                         @else
-                            <td class="px-4 py-2" colspan="4">Not open for booking</td>
+                            <td class="px-4 py-2" colspan="5">Not open for booking</td>
                         @endif
                     </tr>
                 @endforeach

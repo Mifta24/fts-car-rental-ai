@@ -16,7 +16,7 @@
                 <span class="rental-monogram" aria-hidden="true">{{ mb_substr((string) auth()->user()?->currentRental()?->name, 0, 1) ?: 'F' }}</span>
                 <div>
                     <p class="text-sm font-semibold text-slate-900">{{ auth()->user()?->currentRental()?->name }}</p>
-                    <p class="text-xs text-slate-500">Admin Dashboard</p>
+                    <p class="text-xs text-slate-500">Admin Dashboard{{ auth()->user()?->currentRole() ? ' · '.ucfirst(auth()->user()->currentRole()) : '' }}</p>
                 </div>
             </div>
             @if (auth()->user()?->activeRentals()->count() > 1)
@@ -39,6 +39,11 @@
                         ['route' => 'admin.bookings.index', 'label' => 'Bookings'],
                         ['route' => 'admin.handovers.index', 'label' => 'Handovers'],
                     ];
+
+                    if (auth()->user()?->isRentalOwner()) {
+                        $navItems[] = ['route' => 'admin.team.index', 'label' => 'Team'];
+                        $navItems[] = ['route' => 'admin.audit-log.index', 'label' => 'Audit log'];
+                    }
                 @endphp
                 @foreach ($navItems as $item)
                     <a

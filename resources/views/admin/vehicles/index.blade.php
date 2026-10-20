@@ -1,8 +1,10 @@
 <x-admin-layout title="Vehicles">
     <x-slot name="actions">
+        @can('write-rental')
         <a href="{{ route('admin.vehicles.create') }}" class="rounded-full bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700">
             Add vehicle
         </a>
+        @endcan
     </x-slot>
 
     <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -31,11 +33,14 @@
                         </td>
                         <td class="px-4 py-3 text-right">
                             <a href="{{ route('admin.vehicles.inventory', $vehicle) }}" class="text-slate-600 hover:underline">Availability</a>
+                            <a href="{{ route('admin.vehicles.maintenance.index', $vehicle) }}" class="ml-3 text-slate-600 hover:underline">Maintenance</a>
+                            @can('write-rental')
                             <a href="{{ route('admin.vehicles.edit', $vehicle) }}" class="ml-3 text-slate-600 hover:underline">Edit</a>
                             <form method="POST" action="{{ route('admin.vehicles.destroy', $vehicle) }}" class="inline" onsubmit="return confirm('Delete this vehicle?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="ml-3 text-red-600 hover:underline">Delete</button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                 @empty

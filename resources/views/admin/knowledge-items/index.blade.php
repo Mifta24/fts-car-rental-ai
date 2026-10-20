@@ -1,8 +1,10 @@
 <x-admin-layout title="Knowledge base">
     <x-slot name="actions">
+        @can('write-rental')
         <a href="{{ route('admin.knowledge-items.create') }}" class="rounded-full bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700">
             Add entry
         </a>
+        @endcan
     </x-slot>
 
     <p class="mb-4 text-sm text-slate-500">This is the only source the AI Rental Agent is allowed to answer rental-fact questions from. If it's not here, the AI won't guess.</p>
@@ -28,11 +30,13 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-right">
+                            @can('write-rental')
                             <a href="{{ route('admin.knowledge-items.edit', $item) }}" class="text-slate-600 hover:underline">Edit</a>
                             <form method="POST" action="{{ route('admin.knowledge-items.destroy', $item) }}" class="inline" onsubmit="return confirm('Delete this entry?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="ml-3 text-red-600 hover:underline">Delete</button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                 @empty

@@ -42,6 +42,7 @@
                             ])>{{ ucfirst($booking->status) }}</span>
                         </td>
                         <td class="px-4 py-3 text-right">
+                            @can('write-rental')
                             @if (in_array($booking->status, ['pending', 'cancelled', 'expired'], true))
                                 <form method="POST" action="{{ route('admin.bookings.status', $booking) }}" class="inline">
                                     @csrf @method('PATCH')
@@ -56,6 +57,7 @@
                                     <button type="submit" class="ml-3 text-red-600 hover:underline">Cancel</button>
                                 </form>
                             @endif
+                            @endcan
                         </td>
                     </tr>
                 @empty

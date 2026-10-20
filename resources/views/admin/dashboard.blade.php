@@ -5,6 +5,22 @@
         </div>
     @endif
 
+    @if ($expiryAlerts->isNotEmpty())
+        <div class="mb-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
+            <p class="font-medium">Vehicle documents need attention</p>
+            <ul class="mt-1 space-y-0.5">
+                @foreach ($expiryAlerts as $alert)
+                    <li>
+                        <a href="{{ route('admin.vehicles.maintenance.index', $alert->vehicle_id) }}" class="hover:underline">
+                            {{ $alert->vehicle->name }} — {{ ucfirst($alert->type) }}
+                            {{ $alert->expires_on->isPast() && ! $alert->expires_on->isToday() ? 'expired on' : 'expires on' }} {{ $alert->expires_on->toFormattedDateString() }}
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div class="rounded-xl border border-slate-200 bg-white p-4">
             <p class="text-2xl font-semibold text-slate-900">{{ $stats['vehicles'] }}</p>
