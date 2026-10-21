@@ -34,6 +34,7 @@
                 @php
                     $navItems = [
                         ['route' => 'admin.dashboard', 'label' => 'Dashboard'],
+                        ['route' => 'admin.analytics.index', 'label' => 'Analytics'],
                         ['route' => 'admin.vehicles.index', 'label' => 'Vehicles'],
                         ['route' => 'admin.pricing.index', 'label' => 'Pricing & extras'],
                         ['route' => 'admin.knowledge-items.index', 'label' => 'Knowledge base'],

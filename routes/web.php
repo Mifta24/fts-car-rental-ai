@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AddonController;
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\BookingInspectionController;
@@ -39,6 +40,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('vehicles/{vehicle}/inventory', [VehicleInventoryController::class, 'index'])->name('vehicles.inventory');
         Route::get('vehicles/{vehicle}/maintenance', [VehicleMaintenanceController::class, 'index'])->name('vehicles.maintenance.index');
         Route::get('knowledge-items', [KnowledgeItemController::class, 'index'])->name('knowledge-items.index');
+        Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
         Route::get('pricing', [PricingController::class, 'index'])->name('pricing.index');
         Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
         Route::get('bookings/{booking}/inspections/{type}', [BookingInspectionController::class, 'show'])->whereIn('type', ['pickup', 'return'])->name('bookings.inspection.show');
