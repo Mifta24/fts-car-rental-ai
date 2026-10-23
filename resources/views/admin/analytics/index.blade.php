@@ -14,22 +14,22 @@
         <span class="text-xs text-slate-400">{{ $report['from']->format('j M') }} – {{ $report['to']->format('j M Y') }}</span>
     </div>
 
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div class="{{ $card }}"><p class="text-2xl font-semibold text-slate-900">{{ $money($report['revenue']) }}</p><p class="text-xs text-slate-500">Confirmed revenue</p></div>
-        <div class="{{ $card }}"><p class="text-2xl font-semibold text-slate-900">{{ $pct($report['occupancy']) }}</p><p class="text-xs text-slate-500">Fleet occupancy</p></div>
-        <div class="{{ $card }}"><p class="text-2xl font-semibold text-slate-900">{{ $pct($report['conversion']) }}</p><p class="text-xs text-slate-500">Chat → booking ({{ $report['converted'] }} of {{ $report['conversations'] }} chats)</p></div>
-        <div class="{{ $card }}"><p class="text-2xl font-semibold text-slate-900">{{ $report['handovers'] }}</p><p class="text-xs text-slate-500">Handovers to staff</p></div>
+    <div class="motion-cards grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="{{ $card }}"><p class="text-2xl font-semibold text-slate-900" data-countup="{{ (float) $report['revenue'] }}" data-countup-group=".">{{ $money($report['revenue']) }}</p><p class="text-xs text-slate-500">Confirmed revenue</p></div>
+        <div class="{{ $card }}"><p class="text-2xl font-semibold text-slate-900" @if ($report['occupancy'] !== null) data-countup="{{ (float) $report['occupancy'] }}" data-countup-decimals="1" @endif>{{ $pct($report['occupancy']) }}</p><p class="text-xs text-slate-500">Fleet occupancy</p></div>
+        <div class="{{ $card }}"><p class="text-2xl font-semibold text-slate-900" @if ($report['conversion'] !== null) data-countup="{{ (float) $report['conversion'] }}" data-countup-decimals="1" @endif>{{ $pct($report['conversion']) }}</p><p class="text-xs text-slate-500">Chat → booking ({{ $report['converted'] }} of {{ $report['conversations'] }} chats)</p></div>
+        <div class="{{ $card }}"><p class="text-2xl font-semibold text-slate-900" data-countup="{{ (int) $report['handovers'] }}">{{ $report['handovers'] }}</p><p class="text-xs text-slate-500">Handovers to staff</p></div>
     </div>
     <p class="mt-2 text-xs text-slate-400">Revenue counts bookings made in the period and confirmed since. Occupancy is booked cars ÷ rentable cars on the open days in the period; cars in the workshop are not counted as free.</p>
 
-    <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="motion-cards mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="{{ $card }}">
             <p class="mb-3 font-medium text-slate-900">Bookings made</p>
             @php($totalBookings = max(1, array_sum($report['bookings'])))
             @foreach ($report['bookings'] as $status => $count)
                 <div class="mb-2">
                     <div class="flex justify-between text-sm"><span>{{ ucfirst($status) }}</span><span class="text-slate-500">{{ $count }}</span></div>
-                    <div class="h-1.5 rounded-full bg-slate-100"><div class="h-1.5 rounded-full bg-slate-700" style="width: {{ round($count / $totalBookings * 100) }}%"></div></div>
+                    <div class="h-1.5 rounded-full bg-slate-100"><div class="bar-grow h-1.5 rounded-full bg-slate-700" style="width: {{ round($count / $totalBookings * 100) }}%"></div></div>
                 </div>
             @endforeach
         </div>
@@ -53,7 +53,7 @@
             @forelse ($report['topics'] as $topic => $count)
                 <div class="mb-2">
                     <div class="flex justify-between text-sm"><span>{{ $label($topic) }}</span><span class="text-slate-500">{{ $count }}</span></div>
-                    <div class="h-1.5 rounded-full bg-slate-100"><div class="h-1.5 rounded-full bg-slate-700" style="width: {{ round($count / $topMax * 100) }}%"></div></div>
+                    <div class="h-1.5 rounded-full bg-slate-100"><div class="bar-grow h-1.5 rounded-full bg-slate-700" style="width: {{ round($count / $topMax * 100) }}%"></div></div>
                 </div>
             @empty
                 <p class="py-4 text-center text-sm text-slate-400">No knowledge lookups in this period.</p>

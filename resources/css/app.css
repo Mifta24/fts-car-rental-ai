@@ -476,7 +476,55 @@ body.stage-opening { grid-template-rows: var(--top) minmax(0, 1fr); background: 
 .opening-go { display: grid; place-items: center; width: clamp(56px, 6vw, 80px); aspect-ratio: 1; border-radius: 50%; background: var(--lime); color: var(--lime-ink); transition: background .2s, transform .2s; }
 .opening-go:hover { background: var(--lime-2); transform: translateX(4px); }
 
+/* ------------------------------------------------------------------- motion
+   Entrances are staggered (a little rise + fade, one element after another);
+   the shared easing keeps them in the same voice as the deck and headline.
+   The reduced-motion block below flattens all of it. */
+@keyframes rise-in { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bar-grow { from { scale: 0 1; } to { scale: 1 1; } }
+@keyframes check-draw { to { stroke-dashoffset: 0; } }
+@keyframes check-pop { from { scale: .6; opacity: 0; } to { scale: 1; opacity: 1; } }
+
+.btn { transition: background .2s, border-color .2s, color .2s, scale .15s var(--ease); }
+.btn:active:not(:disabled) { scale: .97; }
+.deck-arrow { transition: background .2s, border-color .2s, color .2s, scale .15s var(--ease); }
+.deck-arrow:active { scale: .92; }
+
+/* Showroom: the figure settles in, then the ways in rise one by one. */
+.hero-figure { animation: fade-in 1.1s var(--ease) .15s both; translate: calc(var(--px, 0) * -12px) calc(var(--py, 0) * -6px); transition: translate .5s var(--ease); }
+.hero-way { animation: rise-in .7s var(--ease) both; animation-delay: calc(.45s + var(--i, 0) * 70ms); }
+.hero-way:nth-child(2) { --i: 1; } .hero-way:nth-child(3) { --i: 2; } .hero-way:nth-child(4) { --i: 3; } .hero-way:nth-child(5) { --i: 4; }
+
+/* Deck pages: tiles, price row and spec list stagger in after the page slides. */
+.tile-grid > :nth-child(2), .spec-line li:nth-child(2) { --i: 1; }
+.tile-grid > :nth-child(3), .spec-line li:nth-child(3) { --i: 2; }
+.tile-grid > :nth-child(4), .spec-line li:nth-child(4) { --i: 3; }
+.tile-grid > :nth-child(5), .spec-line li:nth-child(5) { --i: 4; }
+.tile-grid > :nth-child(6), .spec-line li:nth-child(6) { --i: 5; }
+.deck-page[class*="is-entering"] .tile-grid > *,
+.deck-page[class*="is-entering"] .spec-line li { animation: rise-in .6s var(--ease) both; animation-delay: calc(.1s + var(--i, 0) * 70ms); }
+.deck-page[class*="is-entering"] .vslide-foot > * { animation: rise-in .6s var(--ease) .12s both; }
+.deck-page[class*="is-entering"] .vslide-foot > :nth-child(2) { animation-delay: .2s; }
+
+/* Vehicle detail: the info column builds top to bottom. */
+.vinfo > * { animation: rise-in .6s var(--ease) both; animation-delay: calc(.1s + var(--i, 0) * 60ms); }
+.vinfo > :nth-child(2) { --i: 1; } .vinfo > :nth-child(3) { --i: 2; } .vinfo > :nth-child(4) { --i: 3; }
+.vinfo > :nth-child(5) { --i: 4; } .vinfo > :nth-child(6) { --i: 5; } .vinfo > :nth-child(7) { --i: 6; }
+
+/* Admin analytics: cards rise, bars grow from the left. */
+.motion-cards > * { animation: rise-in .55s var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms); }
+.motion-cards > :nth-child(2) { --i: 1; } .motion-cards > :nth-child(3) { --i: 2; } .motion-cards > :nth-child(4) { --i: 3; }
+.bar-grow { transform-origin: left center; animation: bar-grow .9s var(--ease) .25s both; }
+
+/* Reservation done: a check mark draws itself. */
+.done-check { display: block; width: 64px; height: 64px; margin-bottom: 14px; color: var(--lime); animation: check-pop .5s var(--ease) both; }
+.done-check circle { fill: none; stroke: currentColor; stroke-width: 2; opacity: .35; }
+.done-check path { fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; animation: check-draw .5s var(--ease) .3s forwards; }
+
 @media (prefers-reduced-motion: reduce) {
+    .done-check path { stroke-dashoffset: 0; }
+    .hero-figure { translate: none; }
     *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition: none !important; }
 }
 

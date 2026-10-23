@@ -138,6 +138,7 @@
         </div>
 
         <div class="wizard-done" data-wizard-done hidden>
+            <svg class="done-check" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30"/><path d="M20 33l9 9 16-18"/></svg>
             <p class="panel-title">{{ $wizard['done_title'] }}</p>
             <p class="wizard-reference-label">{{ $wizard['reference'] }}</p>
             <p class="wizard-reference" data-done-reference></p>
