@@ -39,8 +39,8 @@ function initNarrators() {
             });
     }
 
-    const femaleNames = /\b(kyoko|ayumi|haruka|nanami|mizuki|yuna|sachiko|eiko|akari|hina|mai|damayanti|gadis|samantha|karen|victoria|susan|zira|jenny|aria|female|woman|girl)\b/i;
-    const maleNames = /\b(otoya|ichiro|takumi|keita|daniel|alex|fred|aaron|david|mark|george|guy|ryan|eric|male|man)\b/i;
+    const femaleNames = /\b(kyoko|ayumi|haruka|nanami|mizuki|yuna|sachiko|eiko|akari|hina|mai|damayanti|gadis|samantha|karen|victoria|susan|zira|jenny|aria|fiona|moira|tessa|veena|allison|ava|joanna|kendra|kimberly|salli|ivy|emma|amy|siti|female|woman|girl|perempuan|wanita)\b/i;
+    const maleNames = /\b(otoya|ichiro|takumi|keita|daniel|alex|fred|aaron|david|mark|george|guy|ryan|eric|andika|ardi|rizwan|reed|rocko|eddy|evan|tom|oliver|thomas|arthur|matthew|joey|justin|brian|christopher|male|man|pria|laki)\b/i;
     const voiceName = (voice) => `${voice.name} ${voice.voiceURI || ''}`;
 
     function maleVoiceName(voice) {
@@ -186,7 +186,11 @@ function initNarrators() {
         utterance.lang = element.dataset.lang;
         const voice = chooseVoice(element);
         if (voice) utterance.voice = voice;
-        if (!voice || !maleVoiceName(voice)) utterance.pitch = 0.75;
+        // No male voice installed for this language: deepen whatever voice is available.
+        if (!voice || !maleVoiceName(voice)) {
+            utterance.pitch = 0.3;
+            utterance.rate = 0.92;
+        }
         utterance.onend = utterance.onerror = () => {
             if (state.speaking) stopSpeech(element);
         };
