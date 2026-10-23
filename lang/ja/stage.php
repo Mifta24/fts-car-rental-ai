@@ -294,6 +294,7 @@ return [
         'chat_send' => '送信',
         'chat_open' => 'AIエージェントに相談',
         'chat_close' => '会話を閉じる',
+        'chat_new' => '新しいチャット',
         'chat_intro' => 'こんにちは。AIレンタカーエージェントです。車両やサービス、レンタルについて何でもお尋ねください。',
         'insurance_included' => '保険付き',
         'max_passengers' => '名乗り',

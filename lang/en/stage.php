@@ -294,6 +294,7 @@ return [
         'chat_send' => 'Send',
         'chat_open' => 'Chat with the AI Rental Agent',
         'chat_close' => 'Close conversation',
+        'chat_new' => 'New chat',
         'chat_intro' => 'Hi! I\'m the AI Rental Agent here. Ask me about cars, services, or anything about your rental.',
         'insurance_included' => 'Insurance included',
         'max_passengers' => 'seats',

@@ -294,6 +294,7 @@ return [
         'chat_send' => 'Kirim',
         'chat_open' => 'Chat dengan AI Rental Agent',
         'chat_close' => 'Tutup percakapan',
+        'chat_new' => 'Chat baru',
         'chat_intro' => 'Halo! Saya AI Rental Agent di sini. Tanyakan apa saja soal mobil, layanan, atau rencana sewa Anda.',
         'insurance_included' => 'Termasuk asuransi',
         'max_passengers' => 'kursi',

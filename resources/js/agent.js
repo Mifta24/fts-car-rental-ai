@@ -65,6 +65,7 @@ function initAgent() {
     const draftDiscard = root.querySelector('[data-draft-discard]');
     const chatLog = root.querySelector('#agent-chat-log');
     const closeButton = widget.querySelector('[data-chat-close]');
+    const newChatButton = widget.querySelector('[data-chat-new]');
     const launcher = widget.querySelector('[data-chat-launcher]');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
@@ -579,6 +580,7 @@ function initAgent() {
         inputEl.disabled = disabled;
         submitEl.disabled = disabled;
         if (launcher) launcher.disabled = busy || !ready;
+        if (newChatButton) newChatButton.disabled = busy || !ready;
         document.querySelectorAll('[data-ask-form] input, [data-ask-form] button').forEach((el) => { el.disabled = disabled; });
         root.setAttribute('aria-busy', String(busy));
         document.body.classList.toggle('is-thinking', busy);
@@ -936,6 +938,38 @@ function initAgent() {
 
         scrollToBottom();
     }
+
+    /** Forget the current conversation and start a fresh one with a new customer token. */
+    async function startNewChat() {
+        if (busy || !ready) return;
+
+        ready = false;
+        setBusy(true);
+        closeResults({ restoreFocus: false });
+        stopPolling();
+        localStorage.removeItem(config.storageKey);
+        messagesEl.replaceChildren();
+        knownMessageCount = 0;
+        handedOver = false;
+        statusBanner.classList.add('hidden');
+        setChatStatus('');
+        inputEl.value = '';
+
+        try {
+            await boot();
+            ready = true;
+        } catch {
+            statusBanner.textContent = root.dataset.labelConnectionError;
+            statusBanner.classList.remove('hidden');
+            messagesEl.appendChild(bubble('assistant', config.labels.intro));
+        } finally {
+            setBusy(false);
+            scrollToBottom();
+            if (ready) inputEl.focus();
+        }
+    }
+
+    newChatButton?.addEventListener('click', startNewChat);
 
     formEl.addEventListener('submit', (event) => {
         event.preventDefault();
