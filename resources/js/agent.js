@@ -68,6 +68,47 @@ function initAgent() {
     const launcher = widget.querySelector('[data-chat-launcher]');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let replyingTimer = null;
+
+    /** The AI avatar stays "alive" while a fresh reply is being revealed. */
+    function markReplying(duration) {
+        root.classList.add('is-replying');
+        window.clearTimeout(replyingTimer);
+        replyingTimer = window.setTimeout(() => root.classList.remove('is-replying'), duration + 400);
+    }
+
+    /**
+     * Fill `target` with the text, each word in its own span that fades in one
+     * after another. The whole text is in the DOM from the start (same final
+     * size, one announcement for screen readers); only the opacity is animated.
+     * Returns the total reveal time in ms.
+     */
+    function revealWords(target, text) {
+        let tokens = text.split(/(\s+)/);
+        if (tokens.length < 3 && text.length > 8) tokens = text.match(/.{1,4}/gsu) ?? [text];
+
+        const wordCount = tokens.filter((token) => token.trim() !== '').length;
+        const step = Math.min(45, 1100 / Math.max(wordCount, 1));
+        let index = 0;
+
+        tokens.forEach((token) => {
+            if (token.trim() === '') {
+                target.appendChild(document.createTextNode(token));
+                return;
+            }
+
+            const word = document.createElement('span');
+            word.className = 'chat-word';
+            word.style.setProperty('--w', `${Math.round(index * step)}ms`);
+            word.textContent = token;
+            target.appendChild(word);
+            index += 1;
+        });
+
+        return index * step;
+    }
+
     let ready = false;
     let busy = false;
     let handedOver = false;
@@ -151,6 +192,11 @@ function initAgent() {
             return;
         }
 
+        if (resultsStage) {
+            closeResults();
+            return;
+        }
+
         if (isOpen) closePanel();
     });
     syncPanelState();
@@ -207,7 +253,7 @@ function initAgent() {
         return el;
     }
 
-    function bubble(role, text) {
+    function bubble(role, text, live = false) {
         const wrap = document.createElement('div');
         wrap.className =
             role === 'customer' ? 'flex justify-end' : 'flex items-end justify-start gap-2';
@@ -221,18 +267,34 @@ function initAgent() {
             role === 'customer'
                 ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-slate-900 px-3 py-2 text-sm text-white'
                 : 'max-w-[85%] rounded-2xl rounded-bl-sm bg-slate-100 px-3 py-2 text-sm text-slate-900';
-        inner.textContent = text;
+
+        if (live && role !== 'customer' && !reducedMotion && text) {
+            const duration = revealWords(inner, text);
+            const mark = wrap.querySelector('.chat-mark');
+            mark?.classList.add('is-speaking');
+            window.setTimeout(() => mark?.classList.remove('is-speaking'), duration + 400);
+            markReplying(duration);
+            inner.addEventListener('click', () => inner.classList.add('is-skipped'), { once: true });
+        } else {
+            inner.textContent = text;
+        }
 
         wrap.appendChild(inner);
         return wrap;
     }
 
-    function card(children) {
+    function card(children, live = false) {
         const wrap = document.createElement('div');
         wrap.className = 'flex justify-start';
         const inner = document.createElement('div');
         inner.className = 'w-full max-w-[92%] space-y-2';
-        children.forEach((c) => inner.appendChild(c));
+        children.forEach((c, i) => {
+            if (live) {
+                c.style.setProperty('--i', String(i));
+                c.classList.add('chat-stack-item');
+            }
+            inner.appendChild(c);
+        });
         wrap.appendChild(inner);
         return wrap;
     }
@@ -330,20 +392,179 @@ function initAgent() {
         return el;
     }
 
-    function renderUiPayload(uiPayload) {
+    /**
+     * Search results get the middle of the screen: a dimmed backdrop and a row
+     * of large cards that rise in one after another. The chat keeps its own
+     * compact copy, so history stays readable. Only live replies open it.
+     */
+    let resultsStage = null;
+    let resultsReturnFocus = null;
+
+    function closeResults({ restoreFocus = true } = {}) {
+        if (!resultsStage) return;
+
+        const stage = resultsStage;
+        resultsStage = null;
+        document.body.classList.remove('has-results');
+        stage.classList.add('is-closing');
+        window.setTimeout(() => stage.remove(), reducedMotion ? 0 : 280);
+
+        if (restoreFocus && resultsReturnFocus?.isConnected) resultsReturnFocus.focus();
+        resultsReturnFocus = null;
+    }
+
+    function openResults(payload) {
+        closeResults({ restoreFocus: false });
+        resultsReturnFocus = document.activeElement;
+
+        const vehicleUrl = (slug) => config.vehicleUrlTemplate.replace('__SLUG__', encodeURIComponent(slug));
+        const reservationUrl = (slug) => config.reservationUrlTemplate.replace('__SLUG__', encodeURIComponent(slug));
+        const group = config.locale === 'id' ? '.' : ',';
+        const heading = `${payload.pickup_date} → ${payload.return_date}`;
+
+        const stage = document.createElement('div');
+        stage.className = 'results-stage';
+        stage.setAttribute('role', 'dialog');
+        stage.setAttribute('aria-label', heading);
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'results-backdrop';
+        backdrop.addEventListener('click', () => closeResults());
+
+        const panel = document.createElement('div');
+        panel.className = 'results-panel';
+
+        const head = document.createElement('div');
+        head.className = 'results-head';
+        const title = document.createElement('p');
+        title.className = 'results-title';
+        title.textContent = heading;
+        const count = document.createElement('span');
+        count.className = 'results-count';
+        count.textContent = String(payload.vehicles.length);
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'results-close';
+        close.setAttribute('aria-label', config.labels.close);
+        close.innerHTML = '<span aria-hidden="true">×</span>';
+        close.addEventListener('click', () => closeResults());
+        head.append(title, count, close);
+
+        const row = document.createElement('div');
+        row.className = 'results-row';
+
+        const goTo = (link) => (event) => {
+            closePanel({ confirmDraft: false, restoreFocus: false });
+            closeResults({ restoreFocus: false });
+
+            if (link.pathname !== window.location.pathname && window.rentalStage) {
+                event.preventDefault();
+                window.rentalStage.leave(link.href);
+            }
+        };
+
+        payload.vehicles.forEach((vehicle, index) => {
+            const item = document.createElement('article');
+            item.className = 'results-card';
+            item.style.setProperty('--i', String(index));
+
+            if (vehicle.thumbnail_url) {
+                const photo = document.createElement('div');
+                photo.className = 'results-photo';
+                const img = document.createElement('img');
+                img.src = vehicle.thumbnail_url;
+                img.alt = vehicle.name;
+                photo.appendChild(img);
+                item.appendChild(photo);
+            }
+
+            const body = document.createElement('div');
+            body.className = 'results-body';
+
+            const name = document.createElement('h3');
+            name.textContent = vehicle.name;
+
+            const specs = document.createElement('p');
+            specs.className = 'results-specs';
+            specs.textContent = [
+                `${vehicle.seats} ${config.labels.maxPassengers}`,
+                titleCase(vehicle.transmission),
+                vehicle.insurance_included ? config.labels.insuranceIncluded : '',
+            ].filter(Boolean).join(' · ');
+
+            const price = document.createElement('p');
+            price.className = 'results-price';
+            const total = document.createElement('strong');
+            total.textContent = money(vehicle.total_price);
+            total.dataset.countup = String(Number(vehicle.total_price) || 0);
+            total.dataset.countupGroup = group;
+            const per = document.createElement('small');
+            per.textContent = `/ ${vehicle.days} ${config.labels.day}`;
+            price.append(total, per);
+
+            const actions = document.createElement('div');
+            actions.className = 'results-actions';
+            const details = document.createElement('a');
+            details.href = vehicleUrl(vehicle.vehicle_slug);
+            details.className = 'btn btn-ghost btn-sm';
+            details.textContent = config.labels.viewDetails;
+            details.addEventListener('click', goTo(details));
+            const book = document.createElement('a');
+            book.href = reservationUrl(vehicle.vehicle_slug);
+            book.className = 'btn btn-primary btn-sm';
+            book.textContent = config.labels.bookNow;
+            book.addEventListener('click', goTo(book));
+            actions.append(details, book);
+
+            body.append(name, specs, price, actions);
+            item.appendChild(body);
+            row.appendChild(item);
+        });
+
+        const prev = document.createElement('button');
+        prev.type = 'button';
+        prev.className = 'deck-arrow results-arrow results-prev';
+        prev.setAttribute('aria-hidden', 'true');
+        prev.tabIndex = -1;
+        prev.textContent = '←';
+        const next = document.createElement('button');
+        next.type = 'button';
+        next.className = 'deck-arrow results-arrow results-next';
+        next.setAttribute('aria-hidden', 'true');
+        next.tabIndex = -1;
+        next.textContent = '→';
+        const scrollRow = (direction) => row.scrollBy({ left: direction * row.clientWidth * 0.8, behavior: reducedMotion ? 'auto' : 'smooth' });
+        prev.addEventListener('click', () => scrollRow(-1));
+        next.addEventListener('click', () => scrollRow(1));
+
+        panel.append(head, row);
+        if (payload.vehicles.length > 1) panel.append(prev, next);
+        stage.append(backdrop, panel);
+        document.body.appendChild(stage);
+        document.body.classList.add('has-results');
+        resultsStage = stage;
+
+        requestAnimationFrame(() => {
+            close.focus({ preventScroll: true });
+            stage.querySelectorAll('[data-countup]').forEach((el) => window.rentalMotion?.countUp(el));
+        });
+    }
+
+    function renderUiPayload(uiPayload, live = false) {
         if (!uiPayload || !uiPayload.length) return;
 
         uiPayload.forEach((payload) => {
             if (payload.type === 'vehicle_results') {
-                messagesEl.appendChild(card(payload.vehicles.map(vehicleResultCard)));
+                messagesEl.appendChild(card(payload.vehicles.map(vehicleResultCard), live));
+                if (live && payload.vehicles.length) openResults(payload);
             } else if (payload.type === 'vehicle_detail') {
-                messagesEl.appendChild(card([vehicleDetailCard(payload.vehicle)]));
+                messagesEl.appendChild(card([vehicleDetailCard(payload.vehicle)], live));
             } else if (payload.type === 'availability') {
-                messagesEl.appendChild(card([availabilityCard(payload)]));
+                messagesEl.appendChild(card([availabilityCard(payload)], live));
             } else if (payload.type === 'booking_confirmation') {
-                messagesEl.appendChild(card([bookingConfirmationCard(payload)]));
+                messagesEl.appendChild(card([bookingConfirmationCard(payload)], live));
             } else if (payload.type === 'handover') {
-                messagesEl.appendChild(card([handoverCard(payload)]));
+                messagesEl.appendChild(card([handoverCard(payload)], live));
             }
         });
     }
@@ -412,7 +633,7 @@ function initAgent() {
 
             if (data.messages.length > knownMessageCount) {
                 const newMessages = data.messages.slice(knownMessageCount);
-                newMessages.forEach(renderMessage);
+                newMessages.forEach((message) => renderMessage(message, true));
                 if (newMessages.some((message) => message.role === 'staff')) {
                     setChatStatus(config.labels.statusReplied, 'replied');
                 }
@@ -429,18 +650,18 @@ function initAgent() {
         }
     }
 
-    function renderMessage(message) {
+    function renderMessage(message, live = false) {
         if (message.role === 'customer') {
             messagesEl.appendChild(bubble('customer', message.content));
         } else if (message.role === 'assistant') {
             if (message.content) {
-                messagesEl.appendChild(bubble('assistant', message.content));
+                messagesEl.appendChild(bubble('assistant', message.content, live));
             }
-            renderUiPayload(message.ui_payload);
+            renderUiPayload(message.ui_payload, live);
             const chips = actionChips(message.suggested_actions);
             if (chips) messagesEl.appendChild(chips);
         } else if (message.role === 'staff') {
-            messagesEl.appendChild(card([staffBubble(message.content)]));
+            messagesEl.appendChild(card([staffBubble(message.content)], live));
             setChatStatus(config.labels.statusReplied, 'replied');
         } else if (message.role === 'system') {
             messagesEl.appendChild(bubble('assistant', message.content));
@@ -616,7 +837,7 @@ function initAgent() {
             }
 
             // The customer's own message is already on screen; show the rest.
-            data.messages.slice(knownMessageCount).filter((message) => message.role !== 'customer').forEach(renderMessage);
+            data.messages.slice(knownMessageCount).filter((message) => message.role !== 'customer').forEach((message) => renderMessage(message, true));
             knownMessageCount = data.messages.length;
 
             if (data.status === 'handed_over') {
@@ -649,7 +870,7 @@ function initAgent() {
             if (data.pending) {
                 await receiveQueuedReply(customerToken);
             } else {
-                renderMessage(data.message);
+                renderMessage(data.message, true);
                 knownMessageCount += 2; // the customer message just sent + the reply just rendered
                 if (data.status === 'handed_over') {
                     showHandedOverBanner();
@@ -693,7 +914,7 @@ function initAgent() {
                 const menu = quickMenuCard();
                 if (menu) messagesEl.appendChild(card([menu]));
             } else {
-                data.messages.forEach(renderMessage);
+                data.messages.forEach((message) => renderMessage(message));
             }
             knownMessageCount = data.messages.length;
 

@@ -16,31 +16,36 @@ function formatNumber(value, decimals, group) {
     return fraction ? `${grouped}${group === '.' ? ',' : '.'}${fraction}` : grouped;
 }
 
+/** Count one element's number up to its data-countup value. */
+function countUp(element) {
+    if (reducedMotion) return;
+
+    const target = Number.parseFloat(element.dataset.countup);
+    const original = element.textContent;
+    const match = original.match(/[\d.,]+/);
+    if (!match || Number.isNaN(target)) return;
+
+    const decimals = Number.parseInt(element.dataset.countupDecimals ?? '0', 10);
+    const group = element.dataset.countupGroup ?? '';
+    const duration = 900;
+    const start = performance.now();
+
+    function frame(now) {
+        const progress = Math.min(1, (now - start) / duration);
+        const eased = 1 - (1 - progress) ** 3;
+
+        element.textContent = progress === 1
+            ? original
+            : original.replace(match[0], formatNumber(target * eased, decimals, group));
+
+        if (progress < 1) requestAnimationFrame(frame);
+    }
+
+    requestAnimationFrame(frame);
+}
+
 function initCountUp() {
-    document.querySelectorAll('[data-countup]').forEach((element) => {
-        const target = Number.parseFloat(element.dataset.countup);
-        const original = element.textContent;
-        const match = original.match(/[\d.,]+/);
-        if (!match || Number.isNaN(target)) return;
-
-        const decimals = Number.parseInt(element.dataset.countupDecimals ?? '0', 10);
-        const group = element.dataset.countupGroup ?? '';
-        const duration = 900;
-        const start = performance.now();
-
-        function frame(now) {
-            const progress = Math.min(1, (now - start) / duration);
-            const eased = 1 - (1 - progress) ** 3;
-
-            element.textContent = progress === 1
-                ? original
-                : original.replace(match[0], formatNumber(target * eased, decimals, group));
-
-            if (progress < 1) requestAnimationFrame(frame);
-        }
-
-        requestAnimationFrame(frame);
-    });
+    document.querySelectorAll('[data-countup]').forEach(countUp);
 }
 
 function initHeroParallax() {
@@ -55,6 +60,8 @@ function initHeroParallax() {
         hero.style.setProperty('--py', y.toFixed(3));
     }, { passive: true });
 }
+
+window.rentalMotion = { countUp };
 
 document.addEventListener('DOMContentLoaded', () => {
     if (reducedMotion) return;

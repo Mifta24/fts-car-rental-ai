@@ -307,7 +307,9 @@ a.info-fact:hover { border-color: var(--text); background: #ffffff14; }
 .chat-launcher-text strong { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 .chat-launcher-text small { display: none; }
 .chat-launcher-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lime-ink); animation: status-pulse 2s ease-in-out infinite; }
-.chat-widget.is-open .chat-launcher { opacity: 0; visibility: hidden; pointer-events: none; }
+.chat-launcher { transition: background .2s, opacity .2s, visibility .2s, scale .3s var(--ease); }
+.chat-launcher:hover { scale: 1.04; }
+.chat-widget.is-open .chat-launcher { opacity: 0; visibility: hidden; pointer-events: none; scale: .8; }
 .chat-panel { position: absolute; right: 0; bottom: 0; display: flex; width: min(400px, calc(100vw - 24px)); height: min(640px, calc(100dvh - 40px)); flex-direction: column; overflow: hidden; border: 1px solid var(--line-2); border-radius: 24px; background: var(--surface); color: var(--text); box-shadow: 0 30px 70px -20px #000; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(18px) scale(.98); transform-origin: bottom right; transition: opacity .25s ease, transform .35s var(--ease), visibility .25s; }
 .chat-widget.is-open .chat-panel { opacity: 1; visibility: visible; pointer-events: auto; transform: none; }
 .chat-log { display: flex; min-height: 0; flex: 1; flex-direction: column; }
@@ -336,6 +338,17 @@ a.info-fact:hover { border-color: var(--text); background: #ffffff14; }
 .chat-bar button:disabled, .chat-bar input:disabled { cursor: wait; opacity: .55; }
 .chat-draft-dialog { position: absolute; z-index: 8; left: 50%; bottom: 74px; width: calc(100% - 28px); padding: 14px 16px; border: 1px solid var(--line-2); border-radius: 18px; background: var(--surface-3); color: var(--text); box-shadow: 0 16px 44px #000a; transform: translateX(-50%); }
 .chat-draft-dialog[hidden] { display: none; }
+/* Live AI replies: words fade in one after another, result cards follow in turn. */
+.chat-word { animation: word-in .35s var(--ease) both; animation-delay: var(--w, 0ms); }
+.is-skipped .chat-word { animation: none; }
+.chat-stack-item { animation: stack-in .5s var(--ease) both; animation-delay: calc(.3s + var(--i, 0) * 90ms); }
+@keyframes word-in { from { opacity: 0; filter: blur(3px); } to { opacity: 1; filter: blur(0); } }
+@keyframes stack-in { from { opacity: 0; translate: 0 14px; scale: .97; } to { opacity: 1; translate: 0 0; scale: 1; } }
+/* The avatar breathes while the reply is being said. */
+.chat-mark.is-speaking { animation: mark-speak 1.1s ease-in-out infinite; }
+.is-replying .chat-online { animation: status-pulse .7s ease-in-out infinite; }
+.chat-thinking .chat-mark { animation: mark-speak 1.4s ease-in-out infinite; }
+@keyframes mark-speak { 0%, 100% { box-shadow: 0 0 0 0 #f1f22e66; } 50% { box-shadow: 0 0 0 6px #f1f22e00; } }
 @keyframes bubble-in { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
 
 .chat-status { display: flex; align-items: center; gap: 6px; margin-top: 5px; font-size: 10px; font-weight: 500; line-height: 1.3; }
@@ -521,6 +534,47 @@ body.stage-opening { grid-template-rows: var(--top) minmax(0, 1fr); background: 
 .done-check { display: block; width: 64px; height: 64px; margin-bottom: 14px; color: var(--lime); animation: check-pop .5s var(--ease) both; }
 .done-check circle { fill: none; stroke: currentColor; stroke-width: 2; opacity: .35; }
 .done-check path { fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; animation: check-draw .5s var(--ease) .3s forwards; }
+
+/* Search results: a dimmed stage in the middle, cards rise in turn. The chat
+   widget (z-index 60) stays above it on wide screens; on narrow ones the stage
+   becomes a bottom sheet over everything. */
+.results-stage { position: fixed; inset: 0; z-index: 55; display: grid; place-items: center; padding: 24px; padding-right: min(440px, 30vw); }
+.results-backdrop { position: absolute; inset: 0; background: #0b0b0c99; backdrop-filter: blur(6px); animation: fade-in .3s var(--ease) both; }
+.results-panel { position: relative; width: min(980px, 100%); max-height: 100%; display: flex; flex-direction: column; gap: 14px; padding: clamp(16px, 1.8vw, 26px); border: 1px solid var(--line-2); border-radius: 24px; background: var(--glass); backdrop-filter: blur(22px); box-shadow: 0 30px 80px -20px #000; animation: results-in .5s var(--ease) both; }
+.results-head { display: flex; align-items: center; gap: 12px; }
+.results-title { flex: 1; font: 500 clamp(18px, 1.6vw, 24px)/1.1 var(--font-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.results-count { display: grid; place-items: center; min-width: 28px; height: 28px; padding: 0 9px; border-radius: 999px; background: var(--lime); color: var(--lime-ink); font-size: 13px; font-weight: 700; }
+.results-close { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; font-size: 24px; line-height: 1; color: var(--text); cursor: pointer; transition: background .2s; }
+.results-close:hover { background: #ffffff1f; }
+.results-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior: contain; }
+.results-row::-webkit-scrollbar { display: none; }
+.results-card { flex: 0 0 min(300px, 78%); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: var(--surface-2); scroll-snap-align: start; animation: stack-in .6s var(--ease) both; animation-delay: calc(.2s + var(--i, 0) * 90ms); transition: border-color .25s; }
+.results-card:hover { border-color: var(--lime); }
+.results-photo { aspect-ratio: 16 / 10; overflow: hidden; background: var(--surface-3); }
+.results-photo img { width: 100%; height: 100%; object-fit: cover; transition: scale .6s var(--ease); }
+.results-card:hover .results-photo img { scale: 1.05; }
+.results-body { display: flex; flex: 1; flex-direction: column; gap: 6px; padding: 14px 16px 16px; }
+.results-body h3 { font-size: 18px; font-weight: 500; letter-spacing: -.02em; line-height: 1.2; }
+.results-specs { font-size: 12.5px; color: var(--muted); }
+.results-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-top: auto; padding-top: 8px; }
+.results-price strong { font-size: 22px; font-weight: 600; letter-spacing: -.025em; color: var(--lime); font-variant-numeric: tabular-nums; }
+.results-price small { font-size: 12px; color: var(--muted); }
+.results-actions { display: flex; gap: 8px; margin-top: 6px; }
+.results-actions .btn { flex: 1; padding: 0 12px; }
+.results-arrow { position: absolute; top: 50%; z-index: 2; width: 40px; height: 40px; translate: 0 -10%; background: var(--surface-3); }
+.results-prev { left: 6px; }
+.results-next { right: 6px; }
+.results-stage.is-closing .results-backdrop { animation: fade-out .25s var(--ease) both; }
+.results-stage.is-closing .results-panel { animation: results-out .25s var(--ease) both; }
+@keyframes fade-out { to { opacity: 0; } }
+@keyframes results-in { from { opacity: 0; translate: 0 24px; scale: .96; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@keyframes results-out { to { opacity: 0; translate: 0 16px; scale: .97; } }
+@media (max-width: 1099px) {
+    .results-stage { z-index: 70; padding: 0; padding-top: 12vh; align-items: end; }
+    .results-panel { width: 100%; border-radius: 24px 24px 0 0; animation-name: sheet-in; }
+    .results-arrow { display: none; }
+}
+@keyframes sheet-in { from { translate: 0 100%; } to { translate: 0 0; } }
 
 @media (prefers-reduced-motion: reduce) {
     .done-check path { stroke-dashoffset: 0; }
