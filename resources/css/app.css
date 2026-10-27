@@ -131,7 +131,7 @@ body[data-scene="showroom"] .stage-bg::before, .stage-opening .stage-bg::before 
 .hero-place { grid-column: 1; grid-row: 1; display: flex; align-items: center; gap: 14px; align-self: start; font-size: 13px; font-weight: 500; color: var(--muted); }
 .hero-place i { flex: 1; max-width: 220px; height: 1px; background: var(--line-2); }
 .hero-note { position: relative; z-index: 3; grid-column: 2; grid-row: 1 / span 2; align-self: start; }
-.hero-figure { grid-column: 1 / -1; grid-row: 2; align-self: end; justify-self: start; width: auto; max-width: 100%; height: 100%; min-height: 0; margin-left: clamp(0px, 12vw, 240px); object-fit: contain; object-position: left bottom; pointer-events: none; user-select: none; }
+.hero-figure { grid-column: 1 / -1; grid-row: 2; align-self: end; justify-self: start; width: auto; max-width: 100%; height: 74%; min-height: 0; margin-left: clamp(0px, 12vw, 240px); object-fit: contain; object-position: left bottom; pointer-events: none; user-select: none; mask-image: linear-gradient(to bottom, #000 80%, transparent); }
 .hero-note .narrator { max-height: none; }
 .hero-note .narrator-text { font-size: 14.5px; line-height: 1.6; letter-spacing: 0; color: var(--text-2); }
 .hero-index { grid-column: 1; grid-row: 2; align-self: end; margin-bottom: clamp(8px, 2dvh, 20px); font-size: 13px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
