@@ -13,7 +13,7 @@
             @include('rental.narrator', ['text' => $intro, 'key' => 'showroom'])
         </div>
 
-        <img src="{{ asset('images/character/agent-sunglasses.png') }}" alt="{{ $showroom['assistant'] }}" class="hero-figure" width="833" height="1000" decoding="async">
+        <img src="{{ asset('images/character/agent-hero.png') }}" alt="{{ $showroom['assistant'] }}" class="hero-figure" width="1312" height="1199" decoding="async">
 
         <p class="hero-index" aria-hidden="true">001</p>
 
