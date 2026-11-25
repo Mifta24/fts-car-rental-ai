@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('bookings:expire-pending')->hourly()->withoutOverlapping();
 Schedule::command('conversations:prune')->daily()->withoutOverlapping();
+Schedule::command('inventory:extend')->dailyAt('01:00')->timezone('Asia/Jakarta')->withoutOverlapping(30);
